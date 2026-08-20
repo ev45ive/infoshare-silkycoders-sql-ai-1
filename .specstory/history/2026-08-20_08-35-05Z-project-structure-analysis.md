@@ -195,3 +195,418 @@ This is a **Retail Data Warehouse (RetailDW)** project using SQL Server with a c
 Source data → `stg.Sales` (staging) → `etl.LoadFactSales` (MERGE operation) → `dbo.FactSales` (fact table + auto-versioned history)
 
 This is a well-structured enterprise data warehouse with proper separation of concerns, audit capabilities, and security boundaries.
+
+---
+
+_**User (2026-08-20 09:10:02Z)**_
+
+/create-prompt analyse data model
+
+Role: Experiencesd Data Warehouse Engieener
+
+Sections:
+- Overview
+- Darta Flows 
+- Views
+- Key decisions / patterns
+
+Format:
+tables
+
+
+
+---
+
+_**Agent (copilot/claude-haiku-4.5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read skill `agent-customization`
+
+**Input:**
+
+- endLine: `150`
+- filePath: `c:\Users\teamsharq\AppData\Local\Programs\Microsoft VS Code\a5b5009513\resources\app\extensions\copilot\assets\prompts\skills\agent-customization\SKILL.md`
+- startLine: `1`
+
+**Result:**
+
+```
+---
+name: agent-customization
+user-invocable: false # don't show as slash command, we have sepcialized create-agent, create-instructions, create-hook prompts for that
+description: '**WORKFLOW SKILL** — Create, update, review, fix, or debug VS Code agent customization files (.instructions.md, .prompt.md, .agent.md, SKILL.md, copilot-instructions.md, AGENTS.md). USE FOR: saving coding preferences; troubleshooting why instructions/skills/agents are ignored or not invoked; configuring applyTo patterns; defining tool restrictions; creating custom agent modes or specialized workflows; packaging domain knowledge; fixing YAML frontmatter syntax. DO NOT USE FOR: general coding questions (use default agent); runtime debugging or error diagnosis; MCP server configuration (use MCP docs directly); VS Code extension development. INVOKES: file system tools (read/write customization files), ask-questions tool (interview user for requirements), subagents for codebase exploration. FOR SINGLE OPERATIONS: For quick YAML frontmatter fixes or creating a single file from a known pattern, edit the file directly — no skill needed.'
+---
+
+# Agent Customization
+
+## Decision Flow
+
+| Primitive | When to Use |
+|-----------|-------------|
+| agent instructions | Always-on, applies everywhere in the project |
+| File Instructions | Explicit via `applyTo` patterns, or on-demand via `description` |
+| MCP | Integrates external systems, APIs, or data |
+| Hooks | Deterministic shell commands at agent lifecycle points (block tools, auto-format, inject context) |
+| Custom Agents | Subagents for context isolation, or multi-stage workflows with tool restrictions |
+| Prompts | Single focused task with parameterized inputs |
+| Skills | On-demand workflow with bundled assets (scripts/templates) |
+
+## Quick Reference
+
+Consult the reference docs for templates, domain examples, advanced frontmatter options, asset organization, anti-patterns, and creation checklists. If the references are not enough, load the offici
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-haiku-4.5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read skill `agent-customization`: `prompts.md`
+
+**Input:**
+
+- endLine: `200`
+- filePath: `c:\Users\teamsharq\AppData\Local\Programs\Microsoft VS Code\a5b5009513\resources\app\extensions\copilot\assets\prompts\skills\agent-customization\references\prompts.md`
+- startLine: `1`
+
+**Result:**
+
+````
+# [Prompts (.prompt.md)](https://code.visualstudio.com/docs/copilot/customization/prompt-files)
+
+Reusable task templates triggered on-demand in chat. Single focused task with parameterized inputs.
+
+## Locations
+
+| Path | Scope |
+|------|-------|
+| `.github/prompts/*.prompt.md` | Workspace |
+| `<profile>/prompts/*.prompt.md` | User profile |
+
+## Frontmatter
+
+```yaml
+---
+description: "<recommended>" # Optional, but improves discoverability
+name: "Prompt Name"          # Optional, defaults to filename
+argument-hint: "Task..."     # Optional: hint shown in chat input
+agent: "agent"               # Optional: ask, agent, plan, or custom agent
+model: "GPT-5 (copilot)"     # Optional: selected model, or fallback array
+tools: [search, web]    # Optional: built-in, tool sets, MCP (<server>/*), extension
+---
+```
+
+Model fallback is supported:
+
+```yaml
+model: ['GPT-5 (copilot)', 'Claude Sonnet 4.5 (copilot)']
+```
+
+## Template
+
+```markdown
+---
+description: "Generate test cases for selected code"
+agent: "agent"
+---
+Generate comprehensive test cases for the provided code:
+- Include edge cases and error scenarios
+- Follow existing test patterns in the codebase
+- Use descriptive test names
+```
+
+**Context references**: Use Markdown links for files (`[config](./config.json)`) and `#tool:<name>` for tools.
+
+## Invocation
+
+- **Chat**: Type `/` → select from prompts and skills
+- **Command**: `Chat: Run Prompt...`
+- **Editor**: Open prompt file → play button
+
+> Both prompts and skills appear as slash commands in chat. Skills provide multi-step workflows with bundled assets; prompts are single focused tasks.
+
+**Tip**: Use `chat.promptFilesRecommendations` to show prompts as actions when starting a new chat.
+
+## Tool Priority
+
+When both prompt and custom agent define tools:
+1. Tools from prompt file
+2. Tools from referenced custom agent
+3. Default tools for selected agent
+
+## When to Use
+
+- Generate test cases for specific code
+- Create READMEs from specs
+- Summarize metrics with custom para
+… (output truncated)
+````
+</details></tool-use>
+
+_**Agent (copilot/claude-haiku-4.5)**_
+
+I'll help you create a reusable prompt for analyzing data models. Let me clarify a few details to make it most useful: 
+
+_**Agent (copilot/claude-haiku-4.5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="vscode_askQuestions"><details>
+<summary>Tool use: **vscode_askQuestions**</summary>
+
+Analyzing your answers...
+
+**Input:**
+
+- questions:
+
+```
+[
+  {
+    "header": "scope",
+    "options": [
+      {
+        "description": "Team-shared, project-specific",
+        "label": "Workspace (.github/prompts/)"
+      },
+      {
+        "description": "Personal, available across all workspaces",
+        "label": "User profile"
+      }
+    ],
+    "question": "Should this prompt be saved for your workspace or your user profile?",
+    "recommended": true
+  },
+  {
+    "header": "input_type",
+    "options": [
+      {
+        "description": "User selects tables/views and attaches",
+        "label": "Selected SQL files/schema definitions"
+      },
+      {
+        "description": "Analyze live database",
+        "label": "Database connection string"
+      },
+      {
+        "description": "Accept any data model representation",
+        "label": "Either - flexible input"
+      }
+    ],
+    "question": "How will users provide the data model to analyze?",
+    "recommended": true
+  },
+  {
+    "header": "depth_level",
+    "options": [
+      {
+        "description": "High-level structure only",
+        "label": "Executive summary (quick overview)"
+      },
+      {
+        "description": "Include relationships, indexing, constraints",
+        "label": "Detailed analysis"
+      },
+      {
+        "description": "User can request either level",
+        "label": "Both with toggleable detail"
+      }
+    ],
+    "question": "What analysis depth is most useful?",
+    "recommended": true
+  },
+  {
+    "header": "output_context",
+    "options": [
+      {
+        "description": "Design patterns, optimization, issues",
+        "label": "Technical review"
+      },
+      {
+        "description": "Purpose, flows, usage patterns",
+        "label": "Documentation"
+      },
+      {
+        "description": "Technical + documentation perspective",
+        "label": "Both - hybrid"
+      }
+    ],
+    "question": "Should it focus on technical review or documentation?",
+    "recommended": true
+  }
+]
+```
+
+
+**Result:**
+
+```
+{"answers":{"scope":{"selected":["Workspace (.github/prompts/)"],"freeText":null,"skipped":false},"input_type":{"selected":["Selected SQL files/schema definitions"],"freeText":null,"skipped":false},"depth_level":{"selected":["Both with toggleable detail"],"freeText":null,"skipped":false},"output_context":{"selected":["Technical review"],"freeText":null,"skipped":false}}}
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-haiku-4.5)**_
+
+Perfect. I'll create a data model analysis prompt for your workspace. Here's the prompt: 
+
+_**Agent (copilot/claude-haiku-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `analyze-data-model.prompt.md`
+
+**Input:**
+
+- content:
+
+```
+---
+description: "Analyze data warehouse schema as an experienced DW engineer. Reviews structure, data flows, views, and design patterns with tables."
+name: "Analyze Data Model"
+argument-hint: "Provide SQL table/view definitions; optionally add '[DETAILED]' for deep analysis"
+agent: "agent"
+---
+
+# Data Model Analysis
+
+You are an experienced Data Warehouse Engineer analyzing a relational data schema.
+
+Review the provided SQL definitions (tables, views, procedures, functions) and produce a structured analysis with the following sections:
+
+## **Overview**
+- Purpose and domain (what business problem this solves)
+- Architecture pattern (star schema, 3NF, hybrid, etc.)
+- Scope (number of fact/dimension tables, key entities)
+- Technology stack (SQL Server version, temporal tables, etc.)
+
+## **Data Flows**
+- Identify all data movement paths (source → staging → facts/dimensions)
+- Document ETL/ELT procedures and their sequence
+- Show transformations and business logic
+- Note audit/logging mechanisms
+
+**Format**: Use a mermaid flowchart or sequence diagram.
+
+## **Views**
+- List reporting/analytics views
+- Explain their purpose and dependencies
+- Note materialization or performance considerations
+- Identify if serving real-time, summarized, or historical use cases
+
+**Format**: Table with columns: View Name | Purpose | Dependencies | Refresh Logic
+
+## **Key Decisions & Patterns**
+- Design choices (why this schema pattern?)
+- Performance optimizations (indexing, partitioning, compression)
+- Audit/versioning approach (if temporal tables, CDC, or logs used)
+- Security model (schema-based roles, row-level security)
+- Data quality measures (constraints, validation procedures)
+
+**Format**: Table with columns: Pattern | Implementation | Rationale
+
+---
+
+## Depth Control
+
+- **Default**: Summary analysis (high-level structure and flows)
+- **[DETAILED]**: Include deep-dives on indexing strategies, constraint hierarchies, and optimization opportunities
+
+Include visual aids (ASCII diagrams, mermaid graphs) where they clarify structure or flow.
+
+```
+
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\prompts\analyze-data-model.prompt.md`
+
+**Result:**
+
+```
+The following files were successfully edited:
+c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\prompts\analyze-data-model.prompt.md
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-haiku-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **analyze-data-model.prompt.md**</summary>
+
+@@ lines 1-1 @@
+
+```
+---
+description: "Analyze data warehouse schema as an experienced DW engineer. Reviews structure, data flows, views, and design patterns with tables."
+name: "Analyze Data Model"
+argument-hint: "Provide SQL table/view definitions; optionally add '[DETAILED]' for deep analysis"
+agent: "agent"
+---
+
+# Data Model Analysis
+
+You are an experienced Data Warehouse Engineer analyzing a relational data schema.
+
+Review the provided SQL definitions (tables, views, procedures, functions) and produce a structured analysis with the following sections:
+
+## **Overview**
+- Purpose and domain (what business problem this solves)
+- Architecture pattern (star schema, 3NF, hybrid, etc.)
+- Scope (number of fact/dimension tables, key entities)
+- Technology stack (SQL Server version, temporal tables, etc.)
+
+## **Data Flows**
+- Identify all data movement paths (source → staging → facts/dimensions)
+- Document ETL/ELT procedures and their sequence
+- Show transformations and business logic
+- Note audit/logging mechanisms
+
+**Format**: Use a mermaid flowchart or sequence diagram.
+
+## **Views**
+- List reporting/analytics views
+- Explain their purpose and dependencies
+- Note materialization or performance considerations
+- Identify if serving real-time, summarized, or historical use cases
+
+**Format**: Table with columns: View Name | Purpose | Dependencies | Refresh Logic
+
+## **Key Decisions & Patterns**
+- Design choices (why this schema pattern?)
+- Performance optimizations (indexing, partitioning, compression)
+- Audit/versioning approach (if temporal tables, CDC, or logs used)
+- Security model (schema-based roles, row-level security)
+- Data quality measures (constraints, validation procedures)
+
+**Format**: Table with columns: Pattern | Implementation | Rationale
+
+---
+
+## Depth Control
+
+- **Default**: Summary analysis (high-level structure and flows)
+- **[DETAILED]**: Include deep-dives on indexing strategies, constraint hierarchies, and optimization opportunities
+
+Include visual aids (ASCII diagrams, mermaid graphs) where they clarify structure or flow.
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-haiku-4.5)**_
+
+✅ **Created**: `.github/prompts/analyze-data-model.prompt.md`
+
+### What This Prompt Does
+Provides a structured framework for analyzing data warehouse schemas from a technical review perspective. It enforces the role of an experienced DW engineer and outputs tables + diagrams organized by Overview → Data Flows → Views → Key Decisions/Patterns.
+
+### Example Invocations
+1. **Basic analysis**: Attach SQL files → type `/` → select *Analyze Data Model* → get summary
+2. **Deep dive**: Attach files + add `[DETAILED]` → includes indexing/optimization analysis
+3. **Quick review**: Use on staging tables before going to production
+
+### Related Customizations to Create Next
+- **`.instructions.md`** for SQL-specific analysis conventions (naming patterns, schema standards)
+- **Companion skill** that bundles this prompt + SQL templates for generating missing documentation
+- **Custom agent** that chains: (1) schema analysis → (2) documentation generation → (3) validation checks
+
+Would you like me to create any of these follow-ups, or refine the current prompt?
