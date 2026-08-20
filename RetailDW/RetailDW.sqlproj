@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build">
+  <Sdk Name="Microsoft.Build.Sql" Version="2.2.0" />
+  <PropertyGroup>
+    <Name>RetailDW</Name>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql160DatabaseSchemaProvider</DSP>
+    <ModelCollation>1045, CI</ModelCollation>
+    <ProjectGuid>1D5E7213-123C-4B6F-926A-A3402E38C464</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup>
+    <Build Remove="Scripts\**\*.sql" />
+    <PreDeploy Include="Scripts\PreDeployment.sql" />
+    <PostDeploy Include="Scripts\PostDeployment.sql" />
+    <None Include="Scripts\Seed\*.sql" />
+  </ItemGroup>
+</Project>
