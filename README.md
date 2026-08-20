@@ -13,3 +13,11 @@ open window
 # Extensions
 Ctrl+Shift+X
 .vscode\extensions.json @recommended
+
+# Docker
+Menu Start -> Docker Desktop
+
+Terminal => [+|v] - git bash
+```sh
+ ./scripts/dw.sh up
+```
