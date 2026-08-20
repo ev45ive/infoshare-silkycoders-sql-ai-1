@@ -1272,5 +1272,41 @@ _**Agent (copilot/claude-sonnet-5)**_
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-Running `& "C:\\Program Files\\Git\\bin\\bash.exe" -lc "./scripts/dw.sh up"`
+$(info) Enable `shell integration` to improve command detection
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+$(info) Enable `shell integration` to improve command detection
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+$(info) Enable `shell integration` to improve command detection
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+$(info) Enable `shell integration` to improve command detection
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Container 
+
+Container `retaildw-sql` is **Up and healthy**. The memory fix worked and SQL Server started successfully. You can now continue with `.`dw.sh` build`, `publish`, etc. 
+
+SQL Server container is up and healthy. Summary of what fixed it:
+
+1. **Stale volume conflict** — removed `retaildw-data` volume (`docker compose down -v`) which had a leftover directory at the `mssql.conf` mount path.
+2. **Insufficient WSL2 memory** — raised `memory=1GB` → `4GB` in `.wslconfig` (SQL Server 2025 requires ≥2000MB).
+3. Added a `.`dw.sh` wsl-memory [GB]` subcommand (idempotent — only edits `.wslconfig` and restarts WSL if the value actually needs to change) so teammates hitting 

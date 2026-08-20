@@ -21,3 +21,9 @@ Terminal => [+|v] - git bash
 ```sh
  ./scripts/dw.sh up
 ```
+
+# memory limit
+git bash + 
+```sh
+./scripts/dw.sh wsl-memory
+```
