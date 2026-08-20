@@ -1,0 +1,6 @@
+CREATE SEQUENCE [dbo].[SalesKeySequence]
+    AS BIGINT
+    START WITH 1
+    INCREMENT BY 1
+    NO CYCLE
+    CACHE 100;
