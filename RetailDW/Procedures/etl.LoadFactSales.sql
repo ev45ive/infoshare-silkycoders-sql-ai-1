@@ -40,7 +40,6 @@ BEGIN
             [GrossAmount]    DECIMAL (18, 4) NOT NULL,
             [VatRate]        DECIMAL (5, 4)  NOT NULL,
             [SourceSystem]   NVARCHAR (20)   NOT NULL,
-            [SnapshotID]     INT             NULL,
             PRIMARY KEY CLUSTERED ([SalesOrderNo], [SalesLineNo])
         );
 
@@ -58,7 +57,6 @@ BEGIN
                     ISNULL(s.[DiscountAmount], 0) AS [DiscountAmount],
                     p.[VatRate],
                     s.[SourceSystem],
-                    s.[SnapshotID],
                     ROW_NUMBER() OVER (PARTITION BY s.[SalesOrderNo], s.[SalesLineNo]
                                        ORDER BY s.[LoadedAt] DESC, s.[StagingRowId] DESC) AS [RowRank]
             FROM    [stg].[Sales]      AS s
@@ -74,7 +72,7 @@ BEGIN
         INSERT INTO #FtData
         (
             [SalesOrderNo], [SalesLineNo], [SalesDate], [ProductKey], [StoreKey],
-            [Quantity], [UnitPrice], [DiscountAmount], [GrossAmount], [VatRate], [SourceSystem], [SnapshotID]
+            [Quantity], [UnitPrice], [DiscountAmount], [GrossAmount], [VatRate], [SourceSystem]
         )
         SELECT  [SalesOrderNo],
                 [SalesLineNo],
@@ -86,8 +84,7 @@ BEGIN
                 [DiscountAmount],
                 ([Quantity] * [UnitPrice]) - [DiscountAmount] AS [GrossAmount],
                 [VatRate],
-                [SourceSystem],
-                [SnapshotID]
+                [SourceSystem]
         FROM    [Ranked]
         WHERE   [RowRank] = 1;
 
@@ -131,12 +128,7 @@ BEGIN
                           OR tgt.[UnitPrice]      <> src.[UnitPrice]
                           OR tgt.[DiscountAmount] <> src.[DiscountAmount]
                           OR tgt.[GrossAmount]    <> src.[GrossAmount]
-                          OR tgt.[VatRate]        <> src.[VatRate]
-                          -- NULL-safe: SnapshotID is nullable, so a plain <> would
-                          -- silently miss a change from/to NULL (see docs/reference
-                          -- for why: SQL comparisons involving NULL are UNKNOWN,
-                          -- never TRUE, so `<>` alone can never fire on a NULL side).
-                          OR ISNULL(tgt.[SnapshotID], -1) <> ISNULL(src.[SnapshotID], -1))
+                          OR tgt.[VatRate]        <> src.[VatRate])
             THEN UPDATE
                 SET tgt.[SalesDate]      = src.[SalesDate],
                     tgt.[ProductKey]     = src.[ProductKey],
@@ -147,15 +139,14 @@ BEGIN
                     tgt.[GrossAmount]    = src.[GrossAmount],
                     tgt.[VatRate]        = src.[VatRate],
                     tgt.[SourceSystem]   = src.[SourceSystem],
-                    tgt.[SnapshotID]     = src.[SnapshotID],
                     tgt.[LoadId]         = @LoadId
         WHEN NOT MATCHED BY TARGET
             THEN INSERT ([SalesKey], [SalesOrderNo], [SalesLineNo], [SalesDate],
                          [ProductKey], [StoreKey], [Quantity], [UnitPrice],
-                         [DiscountAmount], [GrossAmount], [VatRate], [SourceSystem], [SnapshotID], [LoadId])
+                         [DiscountAmount], [GrossAmount], [VatRate], [SourceSystem], [LoadId])
                  VALUES (src.[SalesKey], src.[SalesOrderNo], src.[SalesLineNo], src.[SalesDate],
                          src.[ProductKey], src.[StoreKey], src.[Quantity], src.[UnitPrice],
-                         src.[DiscountAmount], src.[GrossAmount], src.[VatRate], src.[SourceSystem], src.[SnapshotID], @LoadId)
+                         src.[DiscountAmount], src.[GrossAmount], src.[VatRate], src.[SourceSystem], @LoadId)
         OUTPUT $action INTO @MergeActions ([MergeAction]);
 
         COMMIT TRANSACTION;

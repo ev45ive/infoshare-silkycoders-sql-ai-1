@@ -145,7 +145,7 @@ Key logic:
 
 Key logic:
 - MERGE JOIN condition: `SalesOrderNo + SalesLineNo`
-- WHEN MATCHED: Update if ANY column differs (includes NULL-safe comparison for `SnapshotID`)
+
 - WHEN NOT MATCHED BY TARGET: Insert new row
 - HOLDLOCK hint: Prevents deadlocks in concurrent scenarios
 - OUTPUT $action: Captures INSERT/UPDATE actions for auditing
@@ -227,7 +227,7 @@ GROUP BY dimensions: Sales Year, `fn_SalesWeek()`, Region. Omits product categor
 |---------|----------------|-----------|
 | **Star Schema Simplicity** | 1 fact table (FactSales), 2 dimensions (DimProduct, DimStore), denormalized attributes (Region, CategoryName, VatRate in dimensions) | Optimizes query performance for typical business questions; simplified JOIN logic; reduces cardinality of dimension lookups; enables fast GROUP BY aggregations |
 | **Temporal Table Versioning** | `dbo.FactSales` configured as System-Versioned Temporal Table with automatic `dbo.FactSalesHistory` maintenance; `ValidFrom`/`ValidTo` DATETIME2(7) auto-tracked by SQL Server | Provides audit trail of all fact changes without ETL logic; supports time-travel queries (e.g., "what was this row on date X?"); meets compliance/audit requirements; no data duplication needed |
-| **NULL-Safe Merge Comparison** | `ISNULL(tgt.[SnapshotID], -1) <> ISNULL(src.[SnapshotID], -1)` instead of plain `<>` in MERGE WHEN MATCHED condition | SQL NULL comparisons are UNKNOWN, not FALSE; a plain `<>` comparison never fires when either side is NULL, silently missing changes from/to NULL. Example: `NULL <> 5` is UNKNOWN, so MERGE wouldn't detect change. Using ISNULL() sentinels (-1, 0, empty string) makes all comparisons TRUE/FALSE. |
+
 | **Staging as Untrusted Landing Zone** | `stg.Sales` schema: all columns nullable (ProductCode, StoreCode, Quantity, etc.); no constraints; raw data copied as-is | Isolates source quality issues from warehouse. ETL procedure validates, not schema. Allows schema flexibility if source changes. Enables full rejection audit (invalid rows tracked, not lost). |
 | **Business Key Deduplication** | CTE `[Ranked]` deduplicates by (SalesOrderNo, SalesLineNo) → latest row wins (LoadedAt DESC, StagingRowId DESC) | Sources often send duplicates (retries, network resends). Latest data assumed most correct. Single source of truth for each business key prevents fact table bloat. |
 | **Surrogate Key Reuse & Minting** | UPDATE existing rows' SalesKeys from FactSales; INSERT NEXT VALUE FOR sequence only for new business keys | Maintains key stability—same business key always has same SalesKey across loads. Enables reliable historical joins. SEQUENCE with CACHE 100 provides performance (reduces log flushes). |

@@ -12,7 +12,6 @@ CREATE TABLE [stg].[Sales]
     [UnitPrice]      DECIMAL (18, 4) NULL,
     [DiscountAmount] DECIMAL (18, 4) NULL,
     [SourceSystem]   NVARCHAR (20)   NULL,
-    [SnapshotID]     INT             NULL,
     [LoadedAt]       DATETIME2 (3)   NOT NULL CONSTRAINT [DF_stg_Sales_LoadedAt] DEFAULT (SYSUTCDATETIME()),
     CONSTRAINT [PK_stg_Sales] PRIMARY KEY CLUSTERED ([StagingRowId] ASC)
 );
