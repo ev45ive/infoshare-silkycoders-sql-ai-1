@@ -11,7 +11,7 @@
 #   ./scripts/dw.sh reset     drop and rebuild the database from scratch
 #   ./scripts/dw.sh sql "..." run an ad-hoc query
 #   ./scripts/dw.sh baseline  up + build + publish + seed + etl + smoke
-#   ./scripts/dw.sh wsl-memory [GB]  ensure WSL2 has enough memory for SQL Server (default 4GB)
+#   ./scripts/dw.sh wsl-memory [GB]  ensure WSL2 has enough memory for SQL Server (default 3GB)
 #
 set -euo pipefail
 set +H 2>/dev/null || true
@@ -19,7 +19,7 @@ set +H 2>/dev/null || true
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SERVER="127.0.0.1,14330"
 DB="RetailDW"
-WSL_MIN_MEMORY_GB=4
+WSL_MIN_MEMORY_GB=3
 SA_USER="sa"
 SA_PASS="${MSSQL_SA_PASSWORD:-Workshop_Dev2026#}"
 
@@ -75,6 +75,11 @@ cmd_wsl_memory() { # cmd_wsl_memory [GB] - ensure .wslconfig grants WSL2 enough 
 }
 
 cmd_up() {
+  if sqlcmd -S "$SERVER" -U "$SA_USER" -P "$SA_PASS" -C -l 3 -Q "SELECT 1" >/dev/null 2>&1; then
+    echo "SQL Server is ready on $SERVER"
+    return 0
+  fi
+  
   docker compose -f "$ROOT/docker-compose.yml" up -d
   echo "waiting for SQL Server..."
   for _ in $(seq 1 30); do

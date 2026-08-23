@@ -25,17 +25,29 @@
                   /TCPENABLED=1 /IACCEPTSQLSERVERLICENSETERMS
 
 .EXAMPLE
-    .\scripts\provision-native-db.ps1 -InstanceName RETAILDW
+    .\scripts\provision-native-db.ps1
 #>
 [CmdletBinding()]
 param(
-    [string]$InstanceName = 'RETAILDW',
+    [string]$InstanceName = 'MSSQLSERVER',
     [int]$Port            = 14330,
     [string]$Database     = 'RetailDW',
     [string]$Password     = $(if ($env:MSSQL_SA_PASSWORD) { $env:MSSQL_SA_PASSWORD } else { 'Workshop_Dev2026#' })
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Relaunch elevated (via UAC prompt) if not already running as admin.
+$principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    $argList = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $MyInvocation.MyCommand.Path)
+    foreach ($key in $PSBoundParameters.Keys) {
+        $argList += "-$key"
+        $argList += "$($PSBoundParameters[$key])"
+    }
+    Start-Process -FilePath 'powershell.exe' -Verb RunAs -ArgumentList $argList
+    exit
+}
 
 $isDefault  = $InstanceName -eq 'MSSQLSERVER'
 $winAuth    = if ($isDefault) { '.' } else { ".\$InstanceName" }

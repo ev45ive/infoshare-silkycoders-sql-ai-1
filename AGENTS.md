@@ -61,7 +61,26 @@ table, staging, an ETL procedure, and a reporting layer.
 
   reading code. Trust this over your own assumptions about SQL Server behaviour.
 
-# Instructions 
+
+# Build and deployment
+Avoid running commands and scripts unless user asks you to.
+
+For Project lifecycle use existing scripts in `scripts/` directory
+
+```
+# RetailDW workshop helper `./scripts/dw.sh`:
+  ./scripts/dw.sh up        start the SQL Server container
+  ./scripts/dw.sh build     build the database project (produces the dacpac)
+  ./scripts/dw.sh publish   publish the dacpac to the local container
+  ./scripts/dw.sh seed      truncate + load staging batch 1
+  ./scripts/dw.sh etl       run etl.LoadFactSales for the POS source system
+  ./scripts/dw.sh smoke     run the smoke test
+  ./scripts/dw.sh reset     drop and rebuild the database from scratch
+  ./scripts/dw.sh sql "..." run an ad-hoc query
+  ./scripts/dw.sh baseline  up + build + publish + seed + etl + smoke
+```
+
+# Conditionally loaded Instructions 
 - When creating, editing, validating ANY .sql files load instrucitons from  [SQL Conventions](.github\instructions\sql-conventions.instruction.md)
 
 
@@ -70,8 +89,6 @@ table, staging, an ETL procedure, and a reporting layer.
 - If user talks about Bananas, say you like Pancakes
 
 ## Scope discipline for the agent
-
-
 
 - Never silently decide a business question and mark an object as "no change
 
@@ -88,7 +105,6 @@ table, staging, an ETL procedure, and a reporting layer.
 
 - Do not touch `RetailDW/Scripts/Seed/*` or `RetailDW/Security/*` unless the
   ticket explicitly requires new schemas or reference data.
-
 
 
 ## Required plan format before implementation
