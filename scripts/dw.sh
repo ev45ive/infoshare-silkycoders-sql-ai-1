@@ -9,6 +9,7 @@
 #   ./scripts/dw.sh etl       run etl.LoadFactSales for the POS source system
 #   ./scripts/dw.sh smoke     run the smoke test
 #   ./scripts/dw.sh reset     drop and rebuild the database from scratch
+#   ./scripts/dw.sh diff      generate a deploy diff script from the dacpac vs the target database
 #   ./scripts/dw.sh sql "..." run an ad-hoc query
 #   ./scripts/dw.sh baseline  up + build + publish + seed + etl + smoke
 #   ./scripts/dw.sh wsl-memory [GB]  ensure WSL2 has enough memory for SQL Server (default 3GB)
@@ -79,7 +80,7 @@ cmd_up() {
     echo "SQL Server is ready on $SERVER"
     return 0
   fi
-  
+
   docker compose -f "$ROOT/docker-compose.yml" up -d
   echo "waiting for SQL Server..."
   for _ in $(seq 1 30); do
@@ -110,6 +111,22 @@ cmd_publish() {
     /TargetTrustServerCertificate:True
 }
 
+cmd_diff() { # cmd_diff [outfile] - dacpac (source) vs target database (target), no changes applied
+  local dacpac outfile
+  dacpac="$(winpath "$ROOT/RetailDW/bin/Debug/RetailDW.dacpac")"
+  outfile="$(winpath "${1:-$ROOT/analyses/diff.sql}")"
+  MSYS_NO_PATHCONV=1 sqlpackage \
+    /Action:Script \
+    /SourceFile:"$dacpac" \
+    /TargetServerName:"$SERVER" \
+    /TargetDatabaseName:"$DB" \
+    /TargetUser:"$SA_USER" \
+    /TargetPassword:"$SA_PASS" \
+    /TargetTrustServerCertificate:True \
+    /OutputPath:"$outfile"
+  echo "diff script written to ${1:-$ROOT/analyses/diff.sql}"
+}
+
 cmd_seed() { f "$DB" "$ROOT/data/01-staging-batch-1.sql"; }
 
 cmd_etl() {
@@ -122,11 +139,15 @@ cmd_etl() {
 cmd_smoke() { f "$DB" "$ROOT/tests/smoke-test.sql"; }
 
 cmd_reset() {
-  q "master" "IF DB_ID('$DB') IS NOT NULL
+  # sa's default database can end up pointing at $DB; repoint it first so a
+  # dropped $DB doesn't strand the login with "Cannot open user default database".
+  q "master" "ALTER LOGIN [$SA_USER] WITH DEFAULT_DATABASE = master;
+              IF DB_ID('$DB') IS NOT NULL
               BEGIN
                   ALTER DATABASE [$DB] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
                   DROP DATABASE [$DB];
               END"
+  cmd_build
   cmd_publish
 }
 
@@ -147,6 +168,7 @@ case "${1:-}" in
   etl)      cmd_etl ;;
   smoke)    cmd_smoke ;;
   reset)    cmd_reset ;;
+  diff)     cmd_diff "${2:-}" ;;
   baseline) cmd_baseline ;;
   sql)      q "$DB" "${2:?usage: dw.sh sql \"<query>\"}" ;;
   wsl-memory) cmd_wsl_memory "${2:-}" ;;
