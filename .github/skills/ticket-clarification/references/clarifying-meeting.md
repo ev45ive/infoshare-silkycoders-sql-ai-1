@@ -1,18 +1,11 @@
----
-description: "Run an interactive ticket-grooming session: ask clarifying questions one at a time until the user stops, then summarize answers/decisions/open questions/out-of-scope and offer to save. Use when live-grooming an incomplete ticket with the requester."
-name: "Ticket Clarifying Meeting"
-argument-hint: "Reference a ticket-*.md file or paste the raw ticket"
-agent: "agent"
----
-
-# Ticket Clarifying Meeting
+# Clarifying Meeting (live-session mode)
 
 Run this as a live grooming session with the user acting as the analyst/requester. Do not batch-dump the whole checklist — this is a conversation, not a form.
 
 ## Setup
 
 - Load the ticket from the reference or pasted text provided.
-- Check it against [ticket-quality.instructions.md](../instructions/ticket-quality.instructions.md) to find what's missing or ambiguous.
+- Check it against the [quality checklist](../SKILL.md#quality-checklist) to find what's missing or ambiguous.
 
 ## Session loop
 
@@ -36,6 +29,6 @@ When the session ends, produce a summary with exactly these four sections, in th
 Ask the user exactly one question: should this be saved as a **new file**, used to **update the existing ticket** in place, or added as a **comment/appendix** to the existing ticket without altering the original content?
 
 Then perform only the chosen action:
-- **New file**: create it using the ticket template in [ticket-quality.instructions.md](../instructions/ticket-quality.instructions.md).
+- **New file**: create it using the ticket template in [ticket-quality.instructions.md](../../../instructions/ticket-quality.instructions.md). If that file is missing, stop and tell the user instead of improvising a template.
 - **Update existing**: revise the ticket's fields/criteria directly based on the decisions.
 - **Append as comment**: add a dated "Clarification session" section to the end of the existing ticket with the four summary sections, leaving the original ticket text untouched.

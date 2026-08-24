@@ -1,15 +1,8 @@
----
-description: "Generate clarifying questions for an analyst/requester based on a raw or incomplete ticket, grouped by category. Use when a ticket is missing details needed before implementation can start."
-name: "Ticket Clarifying Questions"
-argument-hint: "Paste the raw ticket/request, or reference a ticket-*.md file"
-agent: "agent"
----
-
-# Ticket Clarifying Questions
+# Clarifying Questions (question-list mode)
 
 Given a raw or incomplete ticket/request, generate the clarifying questions an analyst/requester needs to answer before implementation can start. Only ask — do not answer the questions yourself, and do not guess at missing details.
 
-Check the ticket against [ticket-quality.instructions.md](../instructions/ticket-quality.instructions.md) and generate one question per genuinely missing or ambiguous item. Skip a category entirely if it's already fully specified in the ticket.
+Check the ticket against the [quality checklist](../SKILL.md#quality-checklist) and generate one question per genuinely missing or ambiguous item. Skip a category entirely if it's already fully specified in the ticket.
 
 ## Output format
 
