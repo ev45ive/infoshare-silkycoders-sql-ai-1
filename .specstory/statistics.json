@@ -162,6 +162,24 @@
       "provider": "copilotide",
       "last_updated": "2026-08-20T10:59:18Z"
     },
+    "d26587ac-f778-4f42-92ce-c377a6684d6a": {
+      "user_message_count": 1,
+      "agent_message_count": 1,
+      "start_timestamp": "2026-08-24T10:03:14+02:00",
+      "end_timestamp": "2026-08-24T10:04:21+02:00",
+      "markdown_size_bytes": 1905,
+      "provider": "copilotide",
+      "last_updated": "2026-08-24T08:04:21Z"
+    },
+    "d383b7e2-8537-4117-a7f9-6220e241e512": {
+      "user_message_count": 8,
+      "agent_message_count": 19,
+      "start_timestamp": "2026-08-24T10:05:45+02:00",
+      "end_timestamp": "2026-08-24T10:18:01+02:00",
+      "markdown_size_bytes": 25508,
+      "provider": "copilotide",
+      "last_updated": "2026-08-24T08:18:01Z"
+    },
     "ed7c93ae-b071-45f5-a9fc-5e424d00b3e6": {
       "user_message_count": 1,
       "agent_message_count": 3,
