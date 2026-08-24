@@ -189,6 +189,15 @@
       "provider": "copilotide",
       "last_updated": "2026-08-20T10:59:18Z"
     },
+    "bd19d21a-2688-4ad6-ba01-f4275c8acaac": {
+      "user_message_count": 2,
+      "agent_message_count": 11,
+      "start_timestamp": "2026-08-24T11:49:26+02:00",
+      "end_timestamp": "2026-08-24T11:51:36+02:00",
+      "markdown_size_bytes": 7533,
+      "provider": "copilotide",
+      "last_updated": "2026-08-24T09:51:36Z"
+    },
     "bd54aece-1411-43ae-9ccc-eaed426a251d": {
       "user_message_count": 1,
       "agent_message_count": 1,

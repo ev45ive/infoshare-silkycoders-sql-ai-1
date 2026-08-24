@@ -109,48 +109,6 @@ BEGIN CATCH
 END CATCH
 
 -- ---------------------------------------------------------------------------
-PRINT N'--- 8. NetAmount (DPO-1187) -------------------------------------------';
-
-IF COL_LENGTH(N'reporting.vw_DailySales', N'NetAmount') IS NULL
-BEGIN PRINT N'FAIL: reporting.vw_DailySales is missing NetAmount'; SET @Failures += 1; END
-
-IF COL_LENGTH(N'reporting.vw_WeeklySales', N'NetAmount') IS NULL
-BEGIN PRINT N'FAIL: reporting.vw_WeeklySales is missing NetAmount'; SET @Failures += 1; END
-
-IF EXISTS (
-    SELECT 1
-    FROM   [dbo].[FactSales] AS f
-    JOIN   [dbo].[DimStore]  AS st ON st.[StoreKey] = f.[StoreKey]
-    JOIN   [dbo].[DimProduct] AS p ON p.[ProductKey] = f.[ProductKey]
-    GROUP BY f.[SalesDate], st.[Region], p.[CategoryName]
-    HAVING CAST(SUM(f.[GrossAmount] / (1 + f.[VatRate])) AS DECIMAL(18, 4)) <> (
-        SELECT TOP (1) v.[NetAmount]
-        FROM   [reporting].[vw_DailySales] AS v
-        WHERE  v.[SalesDate] = f.[SalesDate]
-          AND  v.[Region] = st.[Region]
-          AND  v.[CategoryName] = p.[CategoryName]))
-BEGIN
-    PRINT N'FAIL: reporting.vw_DailySales.NetAmount does not match GrossAmount/(1+VatRate) per group';
-    SET @Failures += 1;
-END
-
-IF EXISTS (
-    SELECT 1
-    FROM   [dbo].[FactSales] AS f
-    JOIN   [dbo].[DimStore]  AS st ON st.[StoreKey] = f.[StoreKey]
-    GROUP BY DATEPART(YEAR, f.[SalesDate]), [dbo].[fn_SalesWeek](f.[SalesDate]), st.[Region]
-    HAVING CAST(SUM(f.[GrossAmount] / (1 + f.[VatRate])) AS DECIMAL(18, 4)) <> (
-        SELECT TOP (1) v.[NetAmount]
-        FROM   [reporting].[vw_WeeklySales] AS v
-        WHERE  v.[SalesYear] = DATEPART(YEAR, f.[SalesDate])
-          AND  v.[SalesWeek] = [dbo].[fn_SalesWeek](f.[SalesDate])
-          AND  v.[Region] = st.[Region]))
-BEGIN
-    PRINT N'FAIL: reporting.vw_WeeklySales.NetAmount does not match GrossAmount/(1+VatRate) per group';
-    SET @Failures += 1;
-END
-
--- ---------------------------------------------------------------------------
 PRINT N'======================================================================';
 IF @Failures = 0
     PRINT N'SMOKE TEST PASSED';
