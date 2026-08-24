@@ -8,6 +8,7 @@
 #   ./scripts/dw.sh seed      truncate + load staging batch 1
 #   ./scripts/dw.sh etl       run etl.LoadFactSales for the POS source system
 #   ./scripts/dw.sh smoke     run the smoke test
+#   ./scripts/dw.sh regression <ticket-id>  load data/<ticket-id>-seed.sql, run tests/<ticket-id>-regression.sql
 #   ./scripts/dw.sh reset     drop and rebuild the database from scratch
 #   ./scripts/dw.sh diff      generate a deploy diff script from the dacpac vs the target database
 #   ./scripts/dw.sh sql "..." run an ad-hoc query
@@ -138,6 +139,17 @@ cmd_etl() {
 
 cmd_smoke() { f "$DB" "$ROOT/tests/smoke-test.sql"; }
 
+cmd_regression() { # cmd_regression <ticket-id> - load data/<ticket-id>-seed.sql, run etl, then run tests/<ticket-id>-regression.sql
+  local ticket="${1:?usage: dw.sh regression <ticket-id>}"
+  local seed="$ROOT/data/${ticket}-seed.sql"
+  local test="$ROOT/tests/${ticket}-regression.sql"
+  [ -f "$seed" ] || { echo "missing $seed" >&2; return 1; }
+  [ -f "$test" ] || { echo "missing $test" >&2; return 1; }
+  f "$DB" "$seed"
+  cmd_etl
+  f "$DB" "$test"
+}
+
 cmd_reset() {
   # sa's default database can end up pointing at $DB; repoint it first so a
   # dropped $DB doesn't strand the login with "Cannot open user default database".
@@ -167,6 +179,7 @@ case "${1:-}" in
   seed)     cmd_seed ;;
   etl)      cmd_etl ;;
   smoke)    cmd_smoke ;;
+  regression) cmd_regression "${2:-}" ;;
   reset)    cmd_reset ;;
   diff)     cmd_diff "${2:-}" ;;
   baseline) cmd_baseline ;;

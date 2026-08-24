@@ -39,52 +39,63 @@ flowchart TD
 | ETL | `./scripts/dw.sh etl` | `EXEC etl.LoadFactSales @SourceSystem = N'POS'` moves staged rows into `dbo.FactSales`. Required before the smoke test, since it asserts on fact-table row counts and load status. |
 | Smoke test | `./scripts/dw.sh smoke` | Runs [tests/smoke-test.sql](../tests/smoke-test.sql): objects exist, `FactSales` is system-versioned, dimensions are seeded, baseline load counts match, dedup picked the newest row, NULL discounts coerced to 0, reporting layer is queryable. Fails loudly (`RAISERROR`, non-zero exit) on first failure. |
 
-## 2. Test-driven / full regression suite (long, overnight)
+## 2. Per-change regression tests (run after each schema change)
 
-**Not yet implemented in this repo.** Today there is exactly one staging
-fixture ([data/01-staging-batch-1.sql](../data/01-staging-batch-1.sql)) and one
-test script ([tests/smoke-test.sql](../tests/smoke-test.sql)) — the
-"problem class" and "deployment/version regression" seed/test set below does
-not exist yet anywhere in `data/`, `tests/`, or `docs/`. Design decisions have
-been confirmed (below); building it is still future work.
+The `dw.sh regression` command and naming convention exist; the per-change
+files themselves are created on demand, one pair per ticket, by the
+`schema-change-tests-suite` skill. Today the only files that exist are the
+base fixture ([data/01-staging-batch-1.sql](../data/01-staging-batch-1.sql))
+and [tests/smoke-test.sql](../tests/smoke-test.sql) — no
+`data/<ticket-id>-seed.sql` / `tests/<ticket-id>-regression.sql` pair has been
+created yet.
 
 ```mermaid
 flowchart TD
     subgraph Existing["Exists today"]
         S["dw.sh baseline<br/>(up, build, publish, seed, etl, smoke)"]
     end
-    subgraph Proposed["Proposed - not yet built"]
-        D["One adversarial seed/test batch<br/>(problem classes + deployment/version<br/>regression cases together)"]
-        R["Full overnight regression run<br/>(RAISERROR / non-zero exit, same as smoke test)"]
-        D --> R
+    subgraph Proposed["Proposed - per-change regression"]
+        D["Base adversarial seed/test batch<br/>(problem classes, data/01-staging-batch-1.sql)"]
+        P["Per-change seed + regression file<br/>data/&lt;ticket-id&gt;-seed.sql<br/>tests/&lt;ticket-id&gt;-regression.sql"]
+        R["dw.sh regression &lt;ticket-id&gt;<br/>(RAISERROR / non-zero exit, same as smoke test)"]
+        P --> R
     end
     S -.->|"passes daily"| Proposed
 ```
 
 Confirmed design decisions:
 
-1. **Problem-class coverage** — a single larger adversarial dataset covering
-   all problem classes at once (duplicate lines, NULL discounts,
-   out-of-range dates, currency mismatches, etc.), not one staging batch per
-   case.
-2. **Deployment/version regression** — regression cases for validating each
-   new schema-version deployment live in the **same** seed/test batch as the
-   problem-class tests (one combined dataset + test suite), not a separate
-   chain of historical dacpacs.
+1. **Problem-class coverage** — the base seed batch
+   ([data/01-staging-batch-1.sql](../data/01-staging-batch-1.sql)) stays a
+   single larger adversarial dataset covering all problem classes at once
+   (duplicate lines, NULL discounts, out-of-range dates, currency
+   mismatches, etc.), not one staging batch per case.
+2. **Deployment/version regression** — **superseded 2026-08-24 by the
+   `schema-change-tests-suite` skill.** Regression cases for validating
+   each new schema-version deployment now live in their **own** seed +
+   test file per ticket/change (`data/<ticket-id>-seed.sql` +
+   `tests/<ticket-id>-regression.sql`), separate from both the base
+   problem-class batch and `tests/smoke-test.sql` — not folded into one
+   combined dataset as previously decided here. Still not a separate chain
+   of historical dacpacs.
 3. **Trigger/cadence (CI/CD)** — **out of scope for this repo/doc.** CI/CD
-   wiring (e.g. scheduling the overnight run) is set up elsewhere.
+   wiring (e.g. scheduling an overnight run across all per-change
+   regression files) is set up elsewhere.
 4. **Pass/fail contract** — same convention as
    [tests/smoke-test.sql](../tests/smoke-test.sql): `RAISERROR`, non-zero
    exit, printed diagnostics, per the testing rules in
    [docs/team-conventions.md](./team-conventions.md).
 5. **Data volume** — not a bigger seed. Same scale of data, but more test
    cases with deeper checks and special/edge cases beyond the happy path
-   (this is what makes the run longer, not row counts).
+   per change.
 
-Still open before implementation: where this combined seed/test batch lives
-(e.g. `data/` + `tests/` naming), and whether it's invoked via a new
-`dw.sh regression`-style command. This should go through the
-ticket-clarification workflow before implementation.
+Resolved: naming is `data/<ticket-id>-seed.sql` + a matching
+`tests/<ticket-id>-regression.sql`, run together via
+`./scripts/dw.sh regression <ticket-id>` (loads the seed file, runs
+`etl.LoadFactSales`, then runs the test file). See the
+`schema-change-tests-suite` skill for the full procedure — discovering
+non-happy-path scenarios, designing the seed rows, and deciding whether the
+base batch also needs updating.
 
 ## 3. Write / update documentation
 
