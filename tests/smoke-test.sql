@@ -23,6 +23,7 @@ VALUES (N'dbo.DimProduct'), (N'dbo.DimStore'), (N'dbo.FactSales'),
        (N'dbo.FactSalesHistory'), (N'dbo.LoadLog'), (N'dbo.DeploymentHistory'),
        (N'stg.Sales'), (N'etl.LoadFactSales'), (N'etl.PurgeStaging'),
        (N'reporting.vw_DailySales'), (N'reporting.vw_WeeklySales'),
+       (N'reporting.vw_TopProductsByRevenue'),
        (N'reporting.usp_SalesSummaryByMonth'), (N'dbo.fn_SalesWeek');
 
 SELECT @Failures = @Failures + COUNT(*)
@@ -101,6 +102,7 @@ BEGIN TRY
     DECLARE @Sink INT;
     SELECT @Sink = COUNT(*) FROM [reporting].[vw_DailySales];
     SELECT @Sink = COUNT(*) FROM [reporting].[vw_WeeklySales];
+    SELECT @Sink = COUNT(*) FROM [reporting].[vw_TopProductsByRevenue];
     EXEC [reporting].[usp_SalesSummaryByMonth] @YearMonth = N'2026-01';
 END TRY
 BEGIN CATCH
