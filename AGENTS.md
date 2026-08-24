@@ -67,6 +67,8 @@ Avoid running commands and scripts unless user asks you to.
 
 For Project lifecycle use existing scripts in `scripts/` directory
 
+> Use git bash for those commands. Do not use cmd or powershell.
+
 ```
 # RetailDW workshop helper `./scripts/dw.sh`:
   ./scripts/dw.sh up        start the SQL Server container
