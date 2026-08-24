@@ -1236,18 +1236,100 @@ Analysis template:
 
 _**Agent (copilot/claude-sonnet-5)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_listDirectory"><details>
-<summary>Tool use: **copilot_listDirectory**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `agent-customization`
+
+**Input:**
+
+- endLine: `120`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\skills\schema-change-impact-analysis\SKILL.md`
+- startLine: `1`
+
+**Result:**
+
+```
+---
+name: schema-change-impact-analysis
+description: 'Use before implementing any RetailDW schema/data-model change (new column, table, temporal or MERGE change, view/procedure edit). Produces an impact analysis mapping data flow, affected objects, temporal/MERGE risk, and open questions before code changes. Trigger keywords: impact analysis, dependency mapping, risk assessment, before implementing a multi-object change, what does this change touch.'
+argument-hint: 'Reference a ticket-*.md file or describe the schema change'
+---
+
+# Schema Change Impact Analysis
+
+Maps every object and data flow touched by a proposed RetailDW schema/data
+change, and the risks (temporal versioning, MERGE, migration, sequencing)
+before any code is written.
+
+## When to Use
+
+- Before implementing a change to any `RetailDW/` schema object (`Tables/`,
+  `Views/`, `Procedures/`, `Functions/`, `Sequences/`) — new columns, temporal
+  table changes, MERGE logic changes, view/procedure edits.
+- Before touching `dbo.FactSales` / `dbo.FactSalesHistory` (system-versioned)
+  or any MERGE-based ETL procedure (`etl.LoadFactSales`).
+- When a ticket affects more than one object and needs every downstream
+  consumer mapped before a plan is written.
+
+## Prerequisite: the ticket must already be clarified
+
+This skill does not gather requirements and does not ask clarifying questions
+about the business ask itself.
+
+1. Ask the user whether the ticket/request is already clarified and complete
+   (testable acceptance criteria, owner, sign-off).
+2. If they are not sure or say no, stop and tell them to clarify it first —
+   run the `ticket-clarification` skill, or have them complete it — before
+   continuing with this skill.
+
+## Procedure
+
+1. **Objects involved / changed** — enumerate every actual file path under
+   `RetailDW/` that the change touches or reads from (Tables, Views,
+   Procedures, Functions, Sequences). Cite real paths, not guesses.
+2. **Trace consumers** — for
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-5)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read skill `agent-customization`
+
+**Input:**
+
+- endLine: `50`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\skills\schema-change-impact-analysis\impact-analysis-template.md`
+- startLine: `1`
+
+**Result:**
+
+```
+# Impact Analysis: <Ticket ID / Title>
+
+## Data Flow Touchpoints
+( list, optionally small mermaid diagrams )
+
+## Impact Matrix
+
+| Object | Required Change | Risk | Validation Method |
+| ------ | ---------------- | ---- | ------------------ |
+|        |                   |      |                     |
+
+## Temporal / Logging / MERGE Impact
+
+## Type, Nullability, and Source
+
+## Schema vs Data Migration
+
+## Sequencing
+
+## Open Questions
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-5)**_
@@ -1274,8 +1356,754 @@ _**Agent (copilot/claude-sonnet-5)**_
 Read skill `ticket-clarification`
 </details></tool-use>
 
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="vscode_askQuestions"><details>
+<summary>Tool use: **vscode_askQuestions**</summary>
+
+Analyzing your answers...
+
+**Input:**
+
+- questions:
+
+```
+[
+  {
+    "header": "Ticket readiness",
+    "message": "DPO-1187 has owner, sign-off, and decisions recorded, but 3 items are listed as still open: VatRate=0 handling, zero-row group sign-off, and FactSalesHistory scope.",
+    "options": [
+      {
+        "label": "Proceed — carry the 3 open items into the impact analysis's Open Questions section",
+        "recommended": true
+      },
+      {
+        "label": "Stop — get those 3 answered first (run ticket-clarification)"
+      }
+    ],
+    "question": "Is DPO-1187 clarified enough to run the impact analysis now?"
+  }
+]
+```
+
+
+**Result:**
+
+```
+{"answers":{"Ticket readiness":{"selected":["Proceed — carry the 3 open items into the impact analysis's Open Questions section"],"freeText":null,"skipped":false}}}
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `vw_DailySales|vw_WeeklySales|GrossAmount|VatRate` (`**/RetailDW/**`), 27 results
+
+**Input:**
+
+- includePattern: `RetailDW/**`
+- isRegexp: `true`
+- query: `vw_DailySales|vw_WeeklySales|GrossAmount|VatRate`
+
+**Result:**
+
+```
+Found 27 matches in 8 files for "vw_DailySales|vw_WeeklySales|GrossAmount|VatRate"
+
+RetailDW/Procedures/etl.LoadFactSales.sql
+40:            [GrossAmount]    DECIMAL (18, 4) NOT NULL,
+41:            [VatRate]        DECIMAL (5, 4)  NOT NULL,
+58:                    p.[VatRate],
+75:            [Quantity], [UnitPrice], [DiscountAmount], [GrossAmount], [VatRate], [SourceSystem]
+85:                ([Quantity] * [UnitPrice]) - [DiscountAmount] AS [GrossAmount],
+86:                [VatRate],
+130:                          OR tgt.[GrossAmount]    <> src.[GrossAmount]
+131:                          OR tgt.[VatRate]        <> src.[VatRate])
+139:                    tgt.[GrossAmount]    = src.[GrossAmount],
+140:                    tgt.[VatRate]        = src.[VatRate],
+146:                         [DiscountAmount], [GrossAmount], [VatRate], [SourceSystem], [LoadId])
+149:                         src.[DiscountAmount], src.[GrossAmount], src.[VatRate], src.[SourceSystem], @LoadId)
+
+RetailDW/Procedures/reporting.usp_SalesSummaryByMonth.sql
+12:            SUM(f.[GrossAmount])    AS [GrossAmount],
+
+RetailDW/Scripts/Seed/DimProduct.sql
+15:) AS src ([ProductKey], [ProductCode], [ProductName], [CategoryName], [VatRate], [IsActive])
+21:        tgt.[VatRate]      = src.[VatRate],
+24:    INSERT ([ProductKey], [ProductCode], [ProductName], [CategoryName], [VatRate], [IsActive])
+25:    VALUES (src.[ProductKey], src.[ProductCode], src.[ProductName], src.[CategoryName], src.[VatRate], src.[IsActive]);
+
+RetailDW/Tables/dbo.DimProduct.sql
+7:    [VatRate]      DECIMAL (5, 4) NOT NULL CONSTRAINT [DF_DimProduct_VatRate] DEFAULT (0.2300),
+
+RetailDW/Tables/dbo.FactSales.sql
+26:    [GrossAmount]    DECIMAL (18, 4) NOT NULL, -- computed in ETL as (Quantity * UnitPrice) - DiscountAmount
+27:    [VatRate]        DECIMAL (5, 4)  NOT NULL, -- per-row rate; products can differ, so NetAmount is derived per row, not per group
+44:    INCLUDE ([ProductKey], [StoreKey], [GrossAmount]);
+
+RetailDW/Tables/dbo.FactSales
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `reporting.vw_DailySales.sql`
+
+**Input:**
+
+- endLine: `100`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Views\reporting.vw_DailySales.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+-- Daily sales aggregate used by the operational reporting layer.
+-- TODO (DPO-1187): reporting asked for a net amount column.
+CREATE VIEW [reporting].[vw_DailySales]
+AS
+SELECT  f.[SalesDate],
+        st.[Region],
+        p.[CategoryName],
+        SUM(f.[Quantity])       AS [Quantity],
+        SUM(f.[GrossAmount])    AS [GrossAmount],
+        SUM(f.[DiscountAmount]) AS [DiscountAmount],
+        COUNT_BIG(*)            AS [LineCount]
+FROM    [dbo].[FactSales]   AS f
+JOIN    [dbo].[DimProduct]  AS p  ON p.[ProductKey] = f.[ProductKey]
+JOIN    [dbo].[DimStore]    AS st ON st.[StoreKey]  = f.[StoreKey]
+GROUP BY f.[SalesDate], st.[Region], p.[CategoryName];
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `reporting.vw_WeeklySales.sql`
+
+**Input:**
+
+- endLine: `100`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Views\reporting.vw_WeeklySales.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+-- Weekly rollup. Week number comes from [dbo].[fn_SalesWeek] so that the
+-- business definition of a week lives in exactly one place.
+CREATE VIEW [reporting].[vw_WeeklySales]
+AS
+SELECT  DATEPART(YEAR, f.[SalesDate])   AS [SalesYear],
+        [dbo].[fn_SalesWeek](f.[SalesDate]) AS [SalesWeek],
+        st.[Region],
+        SUM(f.[Quantity])    AS [Quantity],
+        SUM(f.[GrossAmount]) AS [GrossAmount],
+        COUNT_BIG(*)         AS [LineCount]
+FROM    [dbo].[FactSales] AS f
+JOIN    [dbo].[DimStore]  AS st ON st.[StoreKey] = f.[StoreKey]
+GROUP BY DATEPART(YEAR, f.[SalesDate]),
+         [dbo].[fn_SalesWeek](f.[SalesDate]),
+         st.[Region];
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `reporting.usp_SalesSummaryByMonth.sql`
+
+**Input:**
+
+- endLine: `100`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Procedures\reporting.usp_SalesSummaryByMonth.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+-- Monthly sales summary consumed by the Excel refresh job.
+-- @YearMonth is passed as 'YYYY-MM' by the caller.
+CREATE PROCEDURE [reporting].[usp_SalesSummaryByMonth]
+    @YearMonth NVARCHAR (7)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT  st.[Region],
+            p.[CategoryName],
+            SUM(f.[Quantity])       AS [Quantity],
+            SUM(f.[GrossAmount])    AS [GrossAmount],
+            SUM(f.[DiscountAmount]) AS [DiscountAmount],
+            COUNT_BIG(*)            AS [LineCount]
+    FROM    [dbo].[FactSales]  AS f
+    JOIN    [dbo].[DimProduct] AS p  ON p.[ProductKey] = f.[ProductKey]
+    JOIN    [dbo].[DimStore]   AS st ON st.[StoreKey]  = f.[StoreKey]
+    WHERE   CONVERT(NVARCHAR (7), f.[SalesDate], 126) = @YearMonth
+    GROUP BY st.[Region], p.[CategoryName]
+    ORDER BY st.[Region], p.[CategoryName];
+END
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="list_dir"><details>
+<summary>Tool use: **list_dir**</summary>
+
+Read `analyses`
+
+**Input:**
+
+- path: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\analyses`
+
+**Result:**
+
+```
+ANALYSIS_DataModel.md
+diff.scmp
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `smoke-test.sql`, lines 1 to 60
+
+**Input:**
+
+- endLine: `60`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\tests\smoke-test.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+/*
+RetailDW smoke test
+-------------------
+Fast confidence check that the deployed database is usable.
+Fails loudly (RAISERROR severity 16) on the first broken assertion.
+
+Run AFTER:
+  1. sqlpackage publish
+  2. data\01-staging-batch-1.sql
+  3. EXEC etl.LoadFactSales @SourceSystem = N'POS'
+*/
+SET NOCOUNT ON;
+
+DECLARE @Failures INT = 0;
+
+-- ---------------------------------------------------------------------------
+PRINT N'--- 1. objects exist -------------------------------------------------';
+
+DECLARE @Expected TABLE ([ObjectName] SYSNAME NOT NULL);
+
+INSERT INTO @Expected ([ObjectName])
+VALUES (N'dbo.DimProduct'), (N'dbo.DimStore'), (N'dbo.FactSales'),
+       (N'dbo.FactSalesHistory'), (N'dbo.LoadLog'), (N'dbo.DeploymentHistory'),
+       (N'stg.Sales'), (N'etl.LoadFactSales'), (N'etl.PurgeStaging'),
+       (N'reporting.vw_DailySales'), (N'reporting.vw_WeeklySales'),
+       (N'reporting.usp_SalesSummaryByMonth'), (N'dbo.fn_SalesWeek');
+
+SELECT @Failures = @Failures + COUNT(*)
+FROM   @Expected AS e
+WHERE  OBJECT_ID(e.[ObjectName]) IS NULL;
+
+SELECT N'MISSING OBJECT' AS [Problem], e.[ObjectName]
+FROM   @Expected AS e
+WHERE  OBJECT_ID(e.[ObjectName]) IS NULL;
+
+-- ---------------------------------------------------------------------------
+PRINT N'--- 2. FactSales is system-versioned ---------------------------------';
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM   sys.tables AS t
+    JOIN   sys.tables AS h ON h.[object_id] = t.[history_table_id]
+    WHERE  t.[object_id] = OBJECT_ID(N'dbo.FactSales')
+      AND  t.[temporal_type] = 2                    -- SYSTEM_VERSIONED_TEMPORAL_TABLE
+      AND  h.[name] = N'FactSalesHistory')
+BEGIN
+    PRINT N'FAIL: dbo.FactSales is not system-versioned into dbo.FactSalesHistory';
+    SET @Failures += 1;
+END
+
+-- ---------------------------------------------------------------------------
+PRINT N'--- 3. dimensions are seeded -----------------------------------------';
+
+IF (SELECT COUNT(*) FRO
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `dbo.DimProduct.sql`
+
+**Input:**
+
+- endLine: `20`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Tables\dbo.DimProduct.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+CREATE TABLE [dbo].[DimProduct]
+(
+    [ProductKey]   INT            NOT NULL,
+    [ProductCode]  NVARCHAR (20)  NOT NULL,
+    [ProductName]  NVARCHAR (100) NOT NULL,
+    [CategoryName] NVARCHAR (50)  NOT NULL,
+    [VatRate]      DECIMAL (5, 4) NOT NULL CONSTRAINT [DF_DimProduct_VatRate] DEFAULT (0.2300),
+    [IsActive]     BIT            NOT NULL CONSTRAINT [DF_DimProduct_IsActive] DEFAULT (1),
+    CONSTRAINT [PK_DimProduct] PRIMARY KEY CLUSTERED ([ProductKey] ASC)
+);
+GO
+
+CREATE UNIQUE NONCLUSTERED INDEX [UX_DimProduct_ProductCode]
+    ON [dbo].[DimProduct] ([ProductCode] ASC);
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `impact-analysis-DPO-1187.md`
+
+**Input:**
+
+- content:
+
+````
+# Impact Analysis: DPO-1187 — NetAmount column on sales reporting views
+
+## Data Flow Touchpoints
+
+```mermaid
+graph LR
+    DP["dbo.DimProduct.VatRate<br/>(default 0.2300)"]
+    ETL["etl.LoadFactSales<br/>(MERGE, copies VatRate + GrossAmount per row)"]
+    FS["dbo.FactSales<br/>GrossAmount, VatRate (per row)"]
+    FSH["dbo.FactSalesHistory<br/>(auto-mirrored, not queried by these views)"]
+    VD["reporting.vw_DailySales<br/>+ NetAmount = SUM(GrossAmount/(1+VatRate))"]
+    VW["reporting.vw_WeeklySales<br/>+ NetAmount = SUM(GrossAmount/(1+VatRate))"]
+    SM["reporting.usp_SalesSummaryByMonth<br/>(OUT OF SCOPE per ticket decision)"]
+
+    DP --> ETL --> FS
+    FS -.system-versioning.-> FSH
+    FS --> VD
+    FS --> VW
+    FS -.-> SM
+```
+
+`NetAmount` is computed at query time from columns already present on
+`FactSales`; no new column is added to any table.
+
+## Impact Matrix
+
+| Object | Required Change | Risk | Validation Method |
+| --- | --- | --- | --- |
+| [RetailDW/Views/reporting.vw_DailySales.sql](../RetailDW/Views/reporting.vw_DailySales.sql) | Add `SUM(f.[GrossAmount] / (1 + f.[VatRate]))` aggregated per row, cast to `DECIMAL(18,4)`, aliased `[NetAmount]` | Low — additive column, existing `GROUP BY` unchanged | Extend `tests/smoke-test.sql`; re-run `./scripts/dw.sh smoke` |
+| [RetailDW/Views/reporting.vw_WeeklySales.sql](../RetailDW/Views/reporting.vw_WeeklySales.sql) | Same formula added | Low — additive column, existing `GROUP BY` unchanged | Same as above |
+| [RetailDW/Tables/dbo.FactSales.sql](../RetailDW/Tables/dbo.FactSales.sql) | None — `GrossAmount` and `VatRate` already stored per row | N/A | N/A |
+| [RetailDW/Tables/dbo.FactSalesHistory.sql](../RetailDW/Tables/dbo.FactSalesHistory.sql) | None — mirrored automatically by system-versioning, not touched by a view change | N/A | N/A |
+| [RetailDW/Procedures/etl.LoadFactSales.sql](../RetailDW/Procedures/etl.LoadFactSales.sql) | None — already loads/MERGEs `GrossAmount` and `VatRate` | N/A | N/A |
+| [RetailDW/Tables/dbo.DimProduct.sql](../RetailDW/Tables/dbo.DimProduct.sql) | None — source of `VatRate`, unchanged | N/A | N/A |
+| [RetailDW/Procedures/reporting.usp_SalesSummaryByMonth.sql](../RetailDW/Procedures/reporting.usp_SalesSummaryByMonth.sql) | None — explicitly deferred (ticket decision #9) | Flag as follow-up ticket | N/A |
+| [tests/smoke-test.sql](../tests/smoke-test.sql) | Add assertion(s) that `NetAmount` exists and matches expected value for seeded data | Low | `./scripts/dw.sh smoke` |
+
+## Temporal / Logging / MERGE Impact
+
+- `dbo.FactSales` / `dbo.FactSalesHistory` are **not** modified. `NetAmount` is
+  a computed expression in the view, not a stored column, so there is no
+  MERGE change in `etl.LoadFactSales` and no history backfill.
+- Both views select only from current `dbo.FactSales` (no
+  `FOR SYSTEM_TIME` clause), so `NetAmount` only ever reflects the *current*
+  state of a row — it cannot answer a "what was NetAmount as of date X"
+  question against `FactSalesHistory`. This directly bears on the ticket's
+  open question about `FactSalesHistory` scope (see Open Questions).
+- No `LoadLog` / audit impact — this is a read-side change only.
+
+## Type, Nullability, and Source
+
+- Source columns: `dbo.FactSales.GrossAmount` (`DECIMAL(18,4) NOT NULL`) and
+  `dbo.FactSales.VatRate` (`DECIMAL(5,4) NOT NULL`, copied from
+  `dbo.DimProduct.VatRate` at ETL load time).
+- Formula (per ticket decision): `NetAmount = SUM(GrossAmount / (1 + VatRate))`,
+  computed per row then aggregated within the view's existing `GROUP BY`.
+- SQL Server's decimal division precision/scale rules can produce a result
+  wider than `DECIMAL(18,4)` from a `DECIMAL(18,4) / DECIMAL(5,4)` operation.
+  The view expression must explicitly `CAST`/`CONVERT` the result to
+  `DECIMAL(18,4)` to guarantee the precision the ticket specifies — this is
+  an implementation detail the ticket doesn't mention explicitly, called out
+  here as a required part of "Required Change" rather than a business
+  open question.
+- `NetAmount` is not persisted/stored anywhere (query-time only), matching
+  ticket decision.
+- Nullability: `GrossAmount` and `VatRate` are both `NOT NULL`, so
+  `NetAmount` is never `NULL` for any row that exists. A zero-row group
+  simply produces no output row (same as today for `GrossAmount`) — no
+  distinct "zero" or `NULL` handling is introduced by this change.
+- `VatRate = 0` (VAT-exempt): `1 + VatRate = 1`, so there is no division-by-
+  zero risk. `NetAmount` would equal `GrossAmount` for that row, which is
+  arithmetically consistent — the ticket's remaining open question is
+  whether that's the *business-intended* treatment, not a technical risk.
+
+## Schema vs Data Migration
+
+Metadata-only change: two `CREATE VIEW` definitions are updated. No
+`ALTER TABLE`, no `Scripts/PostDeployment.sql` backfill, and no re-run of
+`etl.LoadFactSales` is required — the formula applies to already-loaded
+`FactSales` rows the moment the views are republished.
+
+## Sequencing
+
+No special deploy ordering is required. The view changes are independent of
+ETL run cadence and of each other; either view can be published before the
+other. Normal `.sqlproj` schema diff / publish flow (`./scripts/dw.sh build`
+→ `./scripts/dw.sh publish`) covers this.
+
+## Open Questions
+
+Carried forward from the ticket (still unanswered — do not guess):
+
+1. Should `VatRate = 0` (VAT-exempt products) get any special labeling/
+   handling beyond `NetAmount = GrossAmount`, or is that the intended result?
+2. Zero-row date/region/category groups: ticket says no special handling is
+   needed, but this was not explicitly signed off by Mateusz Kulesza.
+3. Is it acceptable that `NetAmount` only reflects current `FactSales` state
+   (no `FactSalesHistory` / point-in-time support), or is a temporal
+   "as of" version of this reporting expected later?
+
+New from this analysis (engineering detail, recommend proceeding either way):
+
+4. Confirm the view expression should explicitly `CAST`/`CONVERT` to
+   `DECIMAL(18,4)` rather than relying on SQL Server's default decimal
+   division precision — flagging so it isn't silently decided during
+   implementation.
+
+````
+
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\analyses\impact-analysis-DPO-1187.md`
+
+**Result:**
+
+```
+The following files were successfully edited:
+c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\analyses\impact-analysis-DPO-1187.md
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **impact-analysis-DPO-1187.md**</summary>
+
+@@ lines 1-1 @@
+
+````
+# Impact Analysis: DPO-1187 — NetAmount column on sales reporting views
+
+## Data Flow Touchpoints
+
+```mermaid
+graph LR
+    DP["dbo.DimProduct.VatRate<br/>(default 0.2300)"]
+    ETL["etl.LoadFactSales<br/>(MERGE, copies VatRate + GrossAmount per row)"]
+    FS["dbo.FactSales<br/>GrossAmount, VatRate (per row)"]
+    FSH["dbo.FactSalesHistory<br/>(auto-mirrored, not queried by these views)"]
+    VD["reporting.vw_DailySales<br/>+ NetAmount = SUM(GrossAmount/(1+VatRate))"]
+    VW["reporting.vw_WeeklySales<br/>+ NetAmount = SUM(GrossAmount/(1+VatRate))"]
+    SM["reporting.usp_SalesSummaryByMonth<br/>(OUT OF SCOPE per ticket decision)"]
+
+    DP --> ETL --> FS
+    FS -.system-versioning.-> FSH
+    FS --> VD
+    FS --> VW
+    FS -.-> SM
+```
+
+`NetAmount` is computed at query time from columns already present on
+`FactSales`; no new column is added to any table.
+
+## Impact Matrix
+
+| Object | Required Change | Risk | Validation Method |
+| --- | --- | --- | --- |
+| [RetailDW/Views/reporting.vw_DailySales.sql](../RetailDW/Views/reporting.vw_DailySales.sql) | Add `SUM(f.[GrossAmount] / (1 + f.[VatRate]))` aggregated per row, cast to `DECIMAL(18,4)`, aliased `[NetAmount]` | Low — additive column, existing `GROUP BY` unchanged | Extend `tests/smoke-test.sql`; re-run `./scripts/dw.sh smoke` |
+| [RetailDW/Views/reporting.vw_WeeklySales.sql](../RetailDW/Views/reporting.vw_WeeklySales.sql) | Same formula added | Low — additive column, existing `GROUP BY` unchanged | Same as above |
+| [RetailDW/Tables/dbo.FactSales.sql](../RetailDW/Tables/dbo.FactSales.sql) | None — `GrossAmount` and `VatRate` already stored per row | N/A | N/A |
+| [RetailDW/Tables/dbo.FactSalesHistory.sql](../RetailDW/Tables/dbo.FactSalesHistory.sql) | None — mirrored automatically by system-versioning, not touched by a view change | N/A | N/A |
+| [RetailDW/Procedures/etl.LoadFactSales.sql](../RetailDW/Procedures/etl.LoadFactSales.sql) | None — already loads/MERGEs `GrossAmount` and `VatRate` | N/A | N/A |
+| [RetailDW/Tables/dbo.DimProduct.sql](../RetailDW/Tables/dbo.DimProduct.sql) | None — source of `VatRate`, unchanged | N/A | N/A |
+| [RetailDW/Procedures/reporting.usp_SalesSummaryByMonth.sql](../RetailDW/Procedures/reporting.usp_SalesSummaryByMonth.sql) | None — explicitly deferred (ticket decision #9) | Flag as follow-up ticket | N/A |
+| [tests/smoke-test.sql](../tests/smoke-test.sql) | Add assertion(s) that `NetAmount` exists and matches expected value for seeded data | Low | `./scripts/dw.sh smoke` |
+
+## Temporal / Logging / MERGE Impact
+
+- `dbo.FactSales` / `dbo.FactSalesHistory` are **not** modified. `NetAmount` is
+  a computed expression in the view, not a stored column, so there is no
+  MERGE change in `etl.LoadFactSales` and no history backfill.
+- Both views select only from current `dbo.FactSales` (no
+  `FOR SYSTEM_TIME` clause), so `NetAmount` only ever reflects the *current*
+  state of a row — it cannot answer a "what was NetAmount as of date X"
+  question against `FactSalesHistory`. This directly bears on the ticket's
+  open question about `FactSalesHistory` scope (see Open Questions).
+- No `LoadLog` / audit impact — this is a read-side change only.
+
+## Type, Nullability, and Source
+
+- Source columns: `dbo.FactSales.GrossAmount` (`DECIMAL(18,4) NOT NULL`) and
+  `dbo.FactSales.VatRate` (`DECIMAL(5,4) NOT NULL`, copied from
+  `dbo.DimProduct.VatRate` at ETL load time).
+- Formula (per ticket decision): `NetAmount = SUM(GrossAmount / (1 + VatRate))`,
+  computed per row then aggregated within the view's existing `GROUP BY`.
+- SQL Server's decimal division precision/scale rules can produce a result
+  wider than `DECIMAL(18,4)` from a `DECIMAL(18,4) / DECIMAL(5,4)` operation.
+  The view expression must explicitly `CAST`/`CONVERT` the result to
+  `DECIMAL(18,4)` to guarantee the precision the ticket specifies — this is
+  an implementation detail the ticket doesn't mention explicitly, called out
+  here as a required part of "Required Change" rather than a business
+  open question.
+- `NetAmount` is not persisted/stored anywhere (query-time only), matching
+  ticket decision.
+- Nullability: `GrossAmount` and `VatRate` are both `NOT NULL`, so
+  `NetAmount` is never `NULL` for any row that exists. A zero-row group
+  simply produces no output row (same as today for `GrossAmount`) — no
+  distinct "zero" or `NULL` handling is introduced by this change.
+- `VatRate = 0` (VAT-exempt): `1 + VatRate = 1`, so there is no division-by-
+  zero risk. `NetAmount` would equal `GrossAmount` for that row, which is
+  arithmetically consistent — the ticket's remaining open question is
+  whether that's the *business-intended* treatment, not a technical risk.
+
+## Schema vs Data Migration
+
+Metadata-only change: two `CREATE VIEW` definitions are updated. No
+`ALTER TABLE`, no `Scripts/PostDeployment.sql` backfill, and no re-run of
+`etl.LoadFactSales` is required — the formula applies to already-loaded
+`FactSales` rows the moment the views are republished.
+
+## Sequencing
+
+No special deploy ordering is required. The view changes are independent of
+ETL run cadence and of each other; either view can be published before the
+other. Normal `.sqlproj` schema diff / publish flow (`./scripts/dw.sh build`
+→ `./scripts/dw.sh publish`) covers this.
+
+## Open Questions
+
+Carried forward from the ticket (still unanswered — do not guess):
+
+1. Should `VatRate = 0` (VAT-exempt products) get any special labeling/
+   handling beyond `NetAmount = GrossAmount`, or is that the intended result?
+2. Zero-row date/region/category groups: ticket says no special handling is
+   needed, but this was not explicitly signed off by Mateusz Kulesza.
+3. Is it acceptable that `NetAmount` only reflects current `FactSales` state
+   (no `FactSalesHistory` / point-in-time support), or is a temporal
+   "as of" version of this reporting expected later?
+
+New from this analysis (engineering detail, recommend proceeding either way):
+
+4. Confirm the view expression should explicitly `CAST`/`CONVERT` to
+   `DECIMAL(18,4)` rather than relying on SQL Server's default decimal
+   division precision — flagging so it isn't silently decided during
+   implementation.
+
+````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Impact analysis saved to `analyses/impact-analysis-DPO-1187.md`.
+
+**Key findings:**
+- Only 2 objects change: `RetailDW/Views/reporting.vw_DailySales.sql` and `RetailDW/Views/reporting.vw_WeeklySales.sql` — metadata-only, no table/ETL/history changes needed.
+- `vw_DailySales.sql` already has a `-- TODO (DPO-1187)` comment waiting for this.
+- No temporal/MERGE impact since `NetAmount` is computed at query time, not stored.
+
+**4 open questions carried into the analysis** (3 from the ticket, still unanswered; 1 new engineering detail about decimal cast precision) — none were silently decided.
+
 ---
 
 _**User (2026-08-24 08:51:22Z)**_
 
 if anything needs clarifications or decisions stop and #askQuestions before you contnue. at the end also attach those decisions to analysis file
+
+---
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Practical defaults for the 4 open questions in `analyses/impact-analysis-DPO-1187.md`, for your review — none of these are applied yet:
+
+| # | Question | Proposed default | Rationale | Risk if wrong |
+|---|---|---|---|---|
+| 1 | `VatRate = 0` (VAT-exempt) special handling? | **No special handling.** `NetAmount = GrossAmount` (falls out of the formula naturally). | Standard VAT accounting: net = gross when no VAT applies. No flag/label needed for finance to reconcile. | Very low — if Finance later wants VAT-exempt rows visually distinguished, that's an additive change (e.g. a separate indicator column), not a rework of this formula. |
+| 2 | Zero-row groups — no explicit sign-off | **Accept as-is, no change.** A group with no matching rows simply doesn't appear (same behavior `GrossAmount` already has today). | Consistent with existing view semantics; introducing new behavior here (e.g. emitting a zero row) would be a bigger, unrequested change. | Very low — matches current, already-shipped behavior. |
+| 3 | `FactSalesHistory` / point-in-time scope | **Out of scope for this ticket.** Views report current `FactSales` state only, same as `GrossAmount` today. | No existing reporting object in this codebase does point-in-time (`FOR SYSTEM_TIME`) reporting; adding it here would be new scope, not "add a column like the other one." | Medium — if Finance actually needs historical VAT reconciliation (e.g. restating a prior month), this becomes a real gap. Worth an explicit "confirmed out of scope" from Mateusz Kulesza rather than a silent default. |
+| 4 | Explicit `CAST`/`CONVERT` to `DECIMAL(18,4)`? | **Yes, cast explicitly.** `CAST(SUM(f.[GrossAmount] / (1 + f.[VatRate])) AS DECIMAL(18,4))` | Pins precision to what the ticket specified; avoids relying on SQL Server's implicit decimal division scale rules. | Very low — purely a precision-safety measure, no behavior change for in-range values. |
+
+Question 3 is the one I'd flag as genuinely needing Mateusz's confirmation rather than just accepting the default — it's a business scope call, not an engineering detail. Let me know which defaults to accept, reject, or send back for sign-off, and I'll update the analysis file's Open Questions section accordingly.
+
+---
+
+_**User (2026-08-24 09:01:18Z)**_
+
+/schema-change-impact-analysis 
+
+---
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read skill `schema-change-impact-analysis`: `impact-analysis-template.md`
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read skill `schema-change-impact-analysis`
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="vscode_askQuestions"><details>
+<summary>Tool use: **vscode_askQuestions**</summary>
+
+Asked a question (Ticket readiness)
+</details></tool-use>
+
+---
+
+_**User (2026-08-24 09:04:51Z)**_
+
+propse open questions solutions - practical real life defaults. let me review them
+
+---
+
+_**User (2026-08-24 09:07:07Z)**_
+
+update analysis with those decisions and rationale
+
+---
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `impact-analysis-DPO-1187.md`
+
+**Input:**
+
+- endLine: `200`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\analyses\impact-analysis-DPO-1187.md`
+- startLine: `1`
+
+**Result:**
+
+````
+# Impact Analysis: DPO-1187 — NetAmount column on sales reporting views
+
+## Data Flow Touchpoints
+
+```mermaid
+graph LR
+    DP["dbo.DimProduct.VatRate<br/>(default 0.2300)"]
+    ETL["etl.LoadFactSales<br/>(MERGE, copies VatRate + GrossAmount per row)"]
+    FS["dbo.FactSales<br/>GrossAmount, VatRate (per row)"]
+    FSH["dbo.FactSalesHistory<br/>(auto-mirrored, not queried by these views)"]
+    VD["reporting.vw_DailySales<br/>+ NetAmount = SUM(GrossAmount/(1+VatRate))"]
+    VW["reporting.vw_WeeklySales<br/>+ NetAmount = SUM(GrossAmount/(1+VatRate))"]
+    SM["reporting.usp_SalesSummaryByMonth<br/>(OUT OF SCOPE per ticket decision)"]
+
+    DP --> ETL --> FS
+    FS -.system-versioning.-> FSH
+    FS --> VD
+    FS --> VW
+    FS -.-> SM
+```
+
+`NetAmount` is computed at query time from columns already present on
+`FactSales`; no new column is added to any table.
+
+## Impact Matrix
+
+| Object | Required Change | Risk | Validation Method |
+| --- | --- | --- | --- |
+| [RetailDW/Views/reporting.vw_DailySales.sql](../RetailDW/Views/reporting.vw_DailySales.sql) | Add `SUM(f.[GrossAmount] / (1 + f.[VatRate]))` aggregated per row, cast to `DECIMAL(18,4)`, aliased `[NetAmount]` | Low — additive column, existing `GROUP BY` unchanged | Extend `tests/smoke-test.sql`; re-run `./scripts/dw.sh smoke` |
+| [RetailDW/Views/reporting.vw_WeeklySales.sql](../RetailDW/Views/reporting.vw_WeeklySales.sql) | Same formula added | Low — additive column, existing `GROUP BY` unchanged | Same as above |
+| [RetailDW/Tables/dbo.FactSales.sql](../RetailDW/Tables/dbo.FactSales.sql) | None — `GrossAmount` and `VatRate` already stored per row | N/A | N/A |
+| [RetailDW/Tables/dbo.FactSalesHistory.sql](../RetailDW/Tables/dbo.FactSalesHistory.sql) | None — mirrored automatically by system-versioning, not touched by a view change | N/A | N/A |
+| [RetailDW/Procedures/etl.LoadFactSales.sql](../RetailDW/Procedures/etl.LoadFactSales.sql) | None — already loads/MERGEs `GrossAmount` and `VatRat
+… (output truncated)
+````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **impact-analysis-DPO-1187.md**</summary>
+
+@@ lines 91-106 @@
+
+```
+### Decisions applied (defaults proposed and accepted for implementation — 2026-08-24)
+
+1. **`VatRate = 0` (VAT-exempt products):** No special handling.
+   `NetAmount = GrossAmount` falls out of the formula naturally
+   (`GrossAmount / (1 + 0)`). Rationale: standard VAT accounting treats
+   net = gross when no VAT applies; no separate flag/label is introduced.
+2. **Zero-row date/region/category groups:** Accepted as-is, no change.
+   A group with no matching rows simply doesn't appear in the output — same
+   behavior `GrossAmount` already has today. Rationale: consistent with
+   existing view semantics; inventing new behavior (e.g. emitting a zero
+   row) would be unrequested scope.
+3. **`FactSalesHistory` / point-in-time scope:** Treated as out of scope for
+   this ticket. Both views continue to report current `FactSales` state
+   only, same as `GrossAmount` today. Rationale: no existing reporting
+   object in this codebase does point-in-time (`FOR SYSTEM_TIME`) reporting;
+   adding it here would be new scope, not "add a column like the other
+   one." **This is a business-scope default, not a technical fact — it
+   still needs Mateusz Kulesza's explicit sign-off before implementation**,
+   since if Finance later needs historical VAT reconciliation this becomes
+   a real gap, not just an edge case.
+4. **Explicit `DECIMAL(18,4)` cast:** Accepted. The view expression will use
+   `CAST(SUM(f.[GrossAmount] / (1 + f.[VatRate])) AS DECIMAL(18,4))` rather
+   than relying on SQL Server's implicit decimal-division scale rules.
+   Rationale: pins precision to what the ticket specified; pure
+   precision-safety measure, no behavior change for in-range values.
+
+### Still requiring explicit sign-off before implementation
+
+- Item 3 above (`FactSalesHistory` / point-in-time scope) — proceeding with
+  the "out of scope" default, but flagged here so it is not mistaken for a
+  confirmed business decis
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Updated `analyses/impact-analysis-DPO-1187.md` — the 4 proposed defaults are now recorded as decisions with rationale under "Open Questions." Item 3 (`FactSalesHistory`/point-in-time scope) is kept flagged as still needing Mateusz Kulesza's explicit sign-off since it's a business-scope call, not a technical detail — the other 3 are recorded as accepted.
