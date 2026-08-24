@@ -1,3 +1,14 @@
+/*
+    Author:      Mateusz Kulesza <ev45ive@gmail.com>
+    AI model:    Claude Sonnet 5
+    Created:     2026-08-23
+    Description: Loads validated rows from [stg].[Sales] into the temporal fact
+                 table [dbo].[FactSales] and records the outcome in
+                 [dbo].[LoadLog].
+
+    Change log:
+    - 2026-08-24 | Ticket: DPO-1204 | Mateusz Kulesza | Claude Sonnet 5 | Carry SnapshotID through #FtData, reject NULL SnapshotID, include it in the MERGE INSERT/UPDATE branches and change-detection
+*/
 -- =============================================================================
 -- etl.LoadFactSales
 --
@@ -40,6 +51,7 @@ BEGIN
             [GrossAmount]    DECIMAL (18, 4) NOT NULL,
             [VatRate]        DECIMAL (5, 4)  NOT NULL,
             [SourceSystem]   NVARCHAR (20)   NOT NULL,
+            [SnapshotID]     INT             NOT NULL,
             PRIMARY KEY CLUSTERED ([SalesOrderNo], [SalesLineNo])
         );
 
@@ -57,6 +69,7 @@ BEGIN
                     ISNULL(s.[DiscountAmount], 0) AS [DiscountAmount],
                     p.[VatRate],
                     s.[SourceSystem],
+                    s.[SnapshotID],
                     ROW_NUMBER() OVER (PARTITION BY s.[SalesOrderNo], s.[SalesLineNo]
                                        ORDER BY s.[LoadedAt] DESC, s.[StagingRowId] DESC) AS [RowRank]
             FROM    [stg].[Sales]      AS s
@@ -68,11 +81,12 @@ BEGIN
                 AND s.[SalesDate]    IS NOT NULL
                 AND s.[Quantity]     IS NOT NULL
                 AND s.[UnitPrice]    IS NOT NULL
+                AND s.[SnapshotID]   IS NOT NULL
         )
         INSERT INTO #FtData
         (
             [SalesOrderNo], [SalesLineNo], [SalesDate], [ProductKey], [StoreKey],
-            [Quantity], [UnitPrice], [DiscountAmount], [GrossAmount], [VatRate], [SourceSystem]
+            [Quantity], [UnitPrice], [DiscountAmount], [GrossAmount], [VatRate], [SourceSystem], [SnapshotID]
         )
         SELECT  [SalesOrderNo],
                 [SalesLineNo],
@@ -84,7 +98,8 @@ BEGIN
                 [DiscountAmount],
                 ([Quantity] * [UnitPrice]) - [DiscountAmount] AS [GrossAmount],
                 [VatRate],
-                [SourceSystem]
+                [SourceSystem],
+                [SnapshotID]
         FROM    [Ranked]
         WHERE   [RowRank] = 1;
 
@@ -99,7 +114,8 @@ BEGIN
              OR s.[SalesLineNo]  IS NULL
              OR s.[SalesDate]    IS NULL
              OR s.[Quantity]     IS NULL
-             OR s.[UnitPrice]    IS NULL);
+             OR s.[UnitPrice]    IS NULL
+             OR s.[SnapshotID]   IS NULL);
 
         BEGIN TRANSACTION;
 
@@ -128,7 +144,8 @@ BEGIN
                           OR tgt.[UnitPrice]      <> src.[UnitPrice]
                           OR tgt.[DiscountAmount] <> src.[DiscountAmount]
                           OR tgt.[GrossAmount]    <> src.[GrossAmount]
-                          OR tgt.[VatRate]        <> src.[VatRate])
+                          OR tgt.[VatRate]        <> src.[VatRate]
+                          OR tgt.[SnapshotID]     <> src.[SnapshotID])
             THEN UPDATE
                 SET tgt.[SalesDate]      = src.[SalesDate],
                     tgt.[ProductKey]     = src.[ProductKey],
@@ -139,14 +156,15 @@ BEGIN
                     tgt.[GrossAmount]    = src.[GrossAmount],
                     tgt.[VatRate]        = src.[VatRate],
                     tgt.[SourceSystem]   = src.[SourceSystem],
+                    tgt.[SnapshotID]     = src.[SnapshotID],
                     tgt.[LoadId]         = @LoadId
         WHEN NOT MATCHED BY TARGET
             THEN INSERT ([SalesKey], [SalesOrderNo], [SalesLineNo], [SalesDate],
                          [ProductKey], [StoreKey], [Quantity], [UnitPrice],
-                         [DiscountAmount], [GrossAmount], [VatRate], [SourceSystem], [LoadId])
+                         [DiscountAmount], [GrossAmount], [VatRate], [SourceSystem], [SnapshotID], [LoadId])
                  VALUES (src.[SalesKey], src.[SalesOrderNo], src.[SalesLineNo], src.[SalesDate],
                          src.[ProductKey], src.[StoreKey], src.[Quantity], src.[UnitPrice],
-                         src.[DiscountAmount], src.[GrossAmount], src.[VatRate], src.[SourceSystem], @LoadId)
+                         src.[DiscountAmount], src.[GrossAmount], src.[VatRate], src.[SourceSystem], src.[SnapshotID], @LoadId)
         OUTPUT $action INTO @MergeActions ([MergeAction]);
 
         COMMIT TRANSACTION;

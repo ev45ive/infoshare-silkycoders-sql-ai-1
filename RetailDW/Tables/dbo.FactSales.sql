@@ -7,10 +7,8 @@
                  the monthly Excel summary refresh job.
 
     Change log:
-    - 2026-08-23 | Ticket: DPO-1102* | Mateusz Kulesza | Claude Sonnet 5 | Remove Snapshot - will be added in next exercise
-
-    Comments:
-    * example ticket number - invented for illustration, not a real ticket.
+    - 2026-08-23 | Ticket: N/A | Mateusz Kulesza | Claude Sonnet 5 | Remove Snapshot - will be added in next exercise
+    - 2026-08-24 | Ticket: DPO-1204 | Mateusz Kulesza | Claude Sonnet 5 | Add SnapshotID (NOT NULL, no default); existing rows backfilled with SnapshotID = LoadId in PreDeployment.sql before this constraint is enforced
 */
 CREATE TABLE [dbo].[FactSales]
 (
@@ -27,6 +25,7 @@ CREATE TABLE [dbo].[FactSales]
     [VatRate]        DECIMAL (5, 4)  NOT NULL, -- per-row rate; products can differ, so NetAmount is derived per row, not per group
     [SourceSystem]   NVARCHAR (20)   NOT NULL,
     [LoadId]         INT             NOT NULL,
+    [SnapshotID]     INT             NOT NULL, -- source-data version id (independent of LoadId); no default, see PreDeployment.sql for the backfill/NOT NULL migration
     [ValidFrom]      DATETIME2 (7)   GENERATED ALWAYS AS ROW START NOT NULL, -- system-versioning period; do not set manually
     [ValidTo]        DATETIME2 (7)   GENERATED ALWAYS AS ROW END   NOT NULL,
     CONSTRAINT [PK_FactSales] PRIMARY KEY CLUSTERED ([SalesKey] ASC),
