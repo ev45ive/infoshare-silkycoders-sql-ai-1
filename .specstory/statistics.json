@@ -1,5 +1,14 @@
 {
   "sessions": {
+    "03892653-5029-44a7-b443-6af291679e2c": {
+      "user_message_count": 4,
+      "agent_message_count": 22,
+      "start_timestamp": "2026-08-24T10:45:57+02:00",
+      "end_timestamp": "2026-08-24T10:54:44+02:00",
+      "markdown_size_bytes": 41737,
+      "provider": "copilotide",
+      "last_updated": "2026-08-24T08:54:44Z"
+    },
     "083c91e5-a174-4727-b1a4-b83a73e9316e": {
       "user_message_count": 2,
       "agent_message_count": 22,
