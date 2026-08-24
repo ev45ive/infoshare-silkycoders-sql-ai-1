@@ -1,3 +1,17 @@
+/*
+    Author:      Mateusz Kulesza <ev45ive@gmail.com>
+    AI model:    Claude Sonnet 5
+    Created:     2026-08-23
+    Description: System-versioned (temporal) fact table holding one row per sold
+                 order line. Source of truth for revenue/VAT reporting views and
+                 the monthly Excel summary refresh job.
+
+    Change log:
+    - 2026-08-23 | Ticket: DPO-1102* | Mateusz Kulesza | Claude Sonnet 5 | Remove Snapshot - will be added in next exercise
+
+    Comments:
+    * example ticket number - invented for illustration, not a real ticket.
+*/
 CREATE TABLE [dbo].[FactSales]
 (
     [SalesKey]       BIGINT          NOT NULL,
@@ -9,11 +23,11 @@ CREATE TABLE [dbo].[FactSales]
     [Quantity]       DECIMAL (18, 4) NOT NULL,
     [UnitPrice]      DECIMAL (18, 4) NOT NULL,
     [DiscountAmount] DECIMAL (18, 4) NOT NULL CONSTRAINT [DF_FactSales_DiscountAmount] DEFAULT (0),
-    [GrossAmount]    DECIMAL (18, 4) NOT NULL,
-    [VatRate]        DECIMAL (5, 4)  NOT NULL,
+    [GrossAmount]    DECIMAL (18, 4) NOT NULL, -- computed in ETL as (Quantity * UnitPrice) - DiscountAmount
+    [VatRate]        DECIMAL (5, 4)  NOT NULL, -- per-row rate; products can differ, so NetAmount is derived per row, not per group
     [SourceSystem]   NVARCHAR (20)   NOT NULL,
     [LoadId]         INT             NOT NULL,
-    [ValidFrom]      DATETIME2 (7)   GENERATED ALWAYS AS ROW START NOT NULL,
+    [ValidFrom]      DATETIME2 (7)   GENERATED ALWAYS AS ROW START NOT NULL, -- system-versioning period; do not set manually
     [ValidTo]        DATETIME2 (7)   GENERATED ALWAYS AS ROW END   NOT NULL,
     CONSTRAINT [PK_FactSales] PRIMARY KEY CLUSTERED ([SalesKey] ASC),
     CONSTRAINT [UQ_FactSales_OrderLine] UNIQUE NONCLUSTERED ([SalesOrderNo] ASC, [SalesLineNo] ASC),
@@ -22,7 +36,7 @@ CREATE TABLE [dbo].[FactSales]
     CONSTRAINT [FK_FactSales_LoadLog] FOREIGN KEY ([LoadId]) REFERENCES [dbo].[LoadLog] ([LoadId]),
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo])
 )
-WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[FactSalesHistory], DATA_CONSISTENCY_CHECK = ON));
+WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[FactSalesHistory], DATA_CONSISTENCY_CHECK = ON)); -- old row versions kept in FactSalesHistory
 GO
 
 CREATE NONCLUSTERED INDEX [IX_FactSales_SalesDate]
