@@ -726,3 +726,288 @@ A few things worth confirming since I inferred them rather than being told expli
 - **Credentials policy**: I made it refuse to accept passwords in chat and require an existing extension-saved profile, per your "no sensitive data exposed" note — let me know if that's too strict for your workflow.
 
 Want me to test it now against one of the report ideas from `exercises/5a - SQL query ideas.md`?
+
+---
+
+_**User (2026-08-24 11:35:42Z)**_
+
+add handoff options to `agent` to:
+- save report / results to file
+- agent with `schema-change-analysis` to create views/procedures based on query  
+
+---
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `mssql-queries-and-reports.agent.md`
+
+**Input:**
+
+- endLine: `40`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\agents\mssql-queries-and-reports.agent.md`
+- startLine: `1`
+
+**Result:**
+
+```
+---
+description: "Use when the user wants to query or build a report against the live RetailDW database — aggregations, rankings, top-N lists, sales/discount/store scorecards, ad-hoc SQL. Connects via saved MSSQL extension profiles, loads only the specific DDL files needed, and returns the exact SQL, referenced objects, top-10 results, and a short summary."
+tools: [vscode/extensions, vscode/installExtension, vscode/askQuestions, read, ms-mssql.mssql/mssql_dab, ms-mssql.mssql/mssql_connect, ms-mssql.mssql/mssql_list_servers, ms-mssql.mssql/mssql_list_databases, ms-mssql.mssql/mssql_get_connection_details, ms-mssql.mssql/mssql_change_database, ms-mssql.mssql/mssql_list_tables, ms-mssql.mssql/mssql_list_schemas, ms-mssql.mssql/mssql_list_views, ms-mssql.mssql/mssql_list_functions, ms-mssql.mssql/mssql_run_query, search]
+argument-hint: "Describe the query or report you want (e.g. 'top 10 products by revenue')"
+---
+You are a read-only reporting specialist for the RetailDW database. Your job is to turn a plain-language request into a correct, schema-accurate SQL query, run it live, and present the SQL, the objects it touches, and the results.
+
+## Constraints
+- ONLY run `SELECT` statements. Never run `INSERT`/`UPDATE`/`DELETE`/`MERGE`/DDL against the database.
+- DO NOT invent table, view, or column names. Every identifier in your SQL must come from a DDL file you actually read in this turn.
+- DO NOT bulk-read entire folders (`Tables/`, `Views/`, `Procedures/`). Read only the specific `.sql` files for the objects the query needs.
+- DO NOT ask the user to type a password or connection string in chat. Use an existing saved connection/profile from the MSSQL extension only.
+- If no connection profile exists, stop and ask the user to create one in the MSSQL extension's connection UI, then retry — don't collect credentials yourself.
+- DO NOT silently guess business meaning (e.g. "net" vs "gross", VAT-inclusive vs exclusive). If the request is ambiguous against the sc
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+
+**Input:**
+
+- includePattern: `c:\Users\teamsharq\AppData\Local\Programs\Microsoft VS Code\a5b5009513\resources\app\extensions\copilot\assets\prompts\skills\agent-customization\**`
+- isRegexp: `false`
+- query: `handoffs`
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+
+**Input:**
+
+- includePattern: `c:\Users\teamsharq\AppData\Local\Programs\Microsoft VS Code\a5b5009513\**`
+- isRegexp: `false`
+- maxResults: `30`
+- query: `handoffs`
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="fetch_webpage"><details>
+<summary>Tool use: **fetch_webpage**</summary>
+
+Fetched https://code.visualstudio.com/docs/copilot/customization/custom-agents
+
+**Input:**
+
+- query: `custom agent .agent.md handoffs frontmatter format`
+- urls: `["https://code.visualstudio.com/docs/copilot/customization/custom-agents"]`
+
+**Result:**
+
+```
+Here is some relevant context from the web page https://code.visualstudio.com/docs/copilot/customization/custom-agents:
+...
+# Custom agents in VS Code
+...
+## [What are custom agents?](https://code.visualstudio.com/docs/agent-customization/custom-agents#_what-are-custom-agents)
+
+
+The [built-in agent roles](https://code.visualstudio.com/docs/agents/run/agent-harnesses#_choose-a-built-in-agent-role) provide general-purpose configurations for chat in VS Code. For a more tailored
+chat experience, you can create your own custom agents.
+
+
+Custom agents consist of a set of instructions and tools that are applied when
+you switch to that agent. For example, a "Plan" agent could include instructions
+for generating an implementation plan and only use read-only tools. By creating
+a custom agent, you can quickly switch to that specific configuration without
+having to manually select relevant tools and instructions each time.
+
+
+Custom agents are defined in a `.agent.md` Markdown file, and can be stored in your workspace for others to use, or in
+your user profile, where you can reuse them across different workspaces.
+...
+...
+# Custom agents in VS Code
+...
+## [What are custom agents?](https://code.visualstudio.com/docs/agent-customization/custom-agents#_what-are-custom-agents)
+...
+You can reuse your custom agents with [Copilot and cloud harnesses](https://code.visualstudio.com/docs/agents/run/agent-harnesses), enabling you to run autonomous tasks with the same specialized configurations.
+...
+...
+# Custom agents in VS Code
+...
+## [Why use custom agents?](https://code.visualstudio.com/docs/agent-customization/custom-agents#_why-use-custom-agents)
+
+
+Different tasks require different capabilities. A planning agent might only need
+read-only tools for research and analysis to prevent accidental code changes,
+while an implementation agent would need full editing capabilities. Custom agents
+let you specify exactly which tools are available for each task, ensuring the
+AI has the right capabi
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="fetch_webpage"><details>
+<summary>Tool use: **fetch_webpage**</summary>
+
+Fetched https://code.visualstudio.com/docs/copilot/customization/custom-agents
+
+**Input:**
+
+- query: `custom agent example handoffs planning agent implementation agent yaml full example`
+- urls: `["https://code.visualstudio.com/docs/copilot/customization/custom-agents"]`
+
+**Result:**
+
+```
+Here is some relevant context from the web page https://code.visualstudio.com/docs/copilot/customization/custom-agents:
+...
+# Custom agents in VS Code
+...
+## [What are custom agents?](https://code.visualstudio.com/docs/agent-customization/custom-agents#_what-are-custom-agents)
+
+
+The [built-in agent roles](https://code.visualstudio.com/docs/agents/run/agent-harnesses#_choose-a-built-in-agent-role) provide general-purpose configurations for chat in VS Code. For a more tailored
+chat experience, you can create your own custom agents.
+
+
+Custom agents consist of a set of instructions and tools that are applied when
+you switch to that agent. For example, a "Plan" agent could include instructions
+for generating an implementation plan and only use read-only tools. By creating
+a custom agent, you can quickly switch to that specific configuration without
+having to manually select relevant tools and instructions each time.
+
+
+Custom agents are defined in a `.agent.md` Markdown file, and can be stored in your workspace for others to use, or in
+your user profile, where you can reuse them across different workspaces.
+...
+...
+# Custom agents in VS Code
+...
+## [What are custom agents?](https://code.visualstudio.com/docs/agent-customization/custom-agents#_what-are-custom-agents)
+...
+You can reuse your custom agents with [Copilot and cloud harnesses](https://code.visualstudio.com/docs/agents/run/agent-harnesses), enabling you to run autonomous tasks with the same specialized configurations.
+...
+...
+# Custom agents in VS Code
+...
+## [Why use custom agents?](https://code.visualstudio.com/docs/agent-customization/custom-agents#_why-use-custom-agents)
+
+
+Different tasks require different capabilities. A planning agent might only need
+read-only tools for research and analysis to prevent accidental code changes,
+while an implementation agent would need full editing capabilities. Custom agents
+let you specify exactly which tools are available for each task, ensuring the
+AI has the right capabi
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="list_dir"><details>
+<summary>Tool use: **list_dir**</summary>
+
+Read `agents`
+
+**Input:**
+
+- path: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\agents`
+
+**Result:**
+
+```
+mssql-queries-and-reports.agent.md
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
+<summary>Tool use: **replace_string_in_file**</summary>
+
+Replacing 3 lines with 12 lines in `mssql-queries-and-reports.agent.md`
+
+**Input:**
+
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\agents\mssql-queries-and-reports.agent.md`
+- newString:
+
+```
+tools: [vscode/extensions, vscode/installExtension, vscode/askQuestions, read, ms-mssql.mssql/mssql_dab, ms-mssql.mssql/mssql_connect, ms-mssql.mssql/mssql_list_servers, ms-mssql.mssql/mssql_list_databases, ms-mssql.mssql/mssql_get_connection_details, ms-mssql.mssql/mssql_change_database, ms-mssql.mssql/mssql_list_tables, ms-mssql.mssql/mssql_list_schemas, ms-mssql.mssql/mssql_list_views, ms-mssql.mssql/mssql_list_functions, ms-mssql.mssql/mssql_run_query, search]
+argument-hint: "Describe the query or report you want (e.g. 'top 10 products by revenue')"
+handoffs:
+  - label: Save Report to File
+    agent: agent
+    prompt: Save the SQL query and result table from the report above to a file in the workspace (ask me for the location and format — e.g. .sql, .md, .csv — if I haven't said).
+    send: false
+  - label: Turn Query into Schema Change
+    agent: agent
+    prompt: Follow the schema-change-impact-analysis skill to assess turning the query above into a permanent view or stored procedure in RetailDW, based on the objects and SQL used in the report above. Do not implement anything until the impact analysis and plan are confirmed.
+    send: false
+---
+```
+
+- oldString:
+
+```
+tools: [vscode/extensions, vscode/installExtension, vscode/askQuestions, read, ms-mssql.mssql/mssql_dab, ms-mssql.mssql/mssql_connect, ms-mssql.mssql/mssql_list_servers, ms-mssql.mssql/mssql_list_databases, ms-mssql.mssql/mssql_get_connection_details, ms-mssql.mssql/mssql_change_database, ms-mssql.mssql/mssql_list_tables, ms-mssql.mssql/mssql_list_schemas, ms-mssql.mssql/mssql_list_views, ms-mssql.mssql/mssql_list_functions, ms-mssql.mssql/mssql_run_query, search]
+argument-hint: "Describe the query or report you want (e.g. 'top 10 products by revenue')"
+---
+```
+
+
+**Result:**
+
+```
+The following files were successfully edited:
+c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\agents\mssql-queries-and-reports.agent.md
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **mssql-queries-and-reports.agent.md**</summary>
+
+@@ lines 5-5 @@
+
+```
+handoffs:
+  - label: Save Report to File
+    agent: agent
+    prompt: Save the SQL query and result table from the report above to a file in the workspace (ask me for the location and format — e.g. .sql, .md, .csv — if I haven't said).
+    send: false
+  - label: Turn Query into Schema Change
+    agent: agent
+    prompt: Follow the schema-change-impact-analysis skill to assess turning the query above into a permanent view or stored procedure in RetailDW, based on the objects and SQL used in the report above. Do not implement anything until the impact analysis and plan are confirmed.
+    send: false
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Added two handoffs to the frontmatter:
+
+1. **Save Report to File** — hands off to the default Agent mode (this reporting agent has no edit tool by design, so it can't save files itself).
+2. **Turn Query into Schema Change** — hands off with a prompt pointing at the `schema-change-impact-analysis` skill, using the query/objects from the report as input, and explicitly blocks implementation until a plan is confirmed (matching your repo's `AGENTS.md` rule of no code changes before a confirmed plan).
+
+One assumption I made: I targeted both handoffs at `agent` (VS Code's built-in general-purpose Agent mode), since neither "save to file" nor "schema-change-impact-analysis" is itself a custom `.agent.md` in this repo — only a skill exists for the latter. If you'd rather I first create a dedicated `schema-change-analysis` custom agent (wrapping that skill) instead of routing through the default agent, let me know.

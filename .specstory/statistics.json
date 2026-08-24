@@ -127,13 +127,13 @@
       "last_updated": "2026-08-20T10:59:18Z"
     },
     "77e869d1-f40c-4d28-ad70-b4c55ce08226": {
-      "user_message_count": 4,
-      "agent_message_count": 19,
+      "user_message_count": 5,
+      "agent_message_count": 28,
       "start_timestamp": "2026-08-24T13:10:14+02:00",
-      "end_timestamp": "2026-08-24T13:33:11+02:00",
-      "markdown_size_bytes": 34870,
+      "end_timestamp": "2026-08-24T13:37:12+02:00",
+      "markdown_size_bytes": 48639,
       "provider": "copilotide",
-      "last_updated": "2026-08-24T11:33:11Z"
+      "last_updated": "2026-08-24T11:37:12Z"
     },
     "7e6acb0d-188c-4d8c-9d67-fa2d7d72c960": {
       "user_message_count": 1,
