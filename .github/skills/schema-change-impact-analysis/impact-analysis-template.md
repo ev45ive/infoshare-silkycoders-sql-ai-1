@@ -15,6 +15,8 @@
 
 ## Schema vs Data Migration
 
+**Change Shape:** <one of: `view-only` (view/procedure edit, no stored column change) | `pipeline` (new/changed stored column flows through staging + ETL) | `migration` (existing rows need a backfill)>
+
 ## Sequencing
 
 ## Open Questions

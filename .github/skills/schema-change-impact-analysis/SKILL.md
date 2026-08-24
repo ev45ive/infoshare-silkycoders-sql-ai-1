@@ -52,7 +52,12 @@ about the business ask itself.
      exact type/precision and where it's set.
    - **Schema vs data migration** — is this metadata-only (new nullable
      column, new view), or does it need a backfill in
-     `Scripts/PostDeployment.sql`?
+     `Scripts/PostDeployment.sql`? State this explicitly as a **Change
+     Shape** tag (`view-only` | `pipeline` | `migration`) in the template's
+     "Schema vs Data Migration" section — this is the field the
+     `schema-change-implementation` skill reads to decide which steps to
+     run, so it must be handed off explicitly, not left for that skill to
+     infer.
    - **Sequencing** — what deploy order is required (e.g. add column before
      ETL references it, seed reference data before FK, publish before ETL
      re-run)?

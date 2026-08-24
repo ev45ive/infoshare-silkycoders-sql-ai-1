@@ -701,3 +701,904 @@ _**Agent (copilot/claude-sonnet-5)**_
 | 1 | baseline | 2026-08-24 06:43:17.581 | sa | Initial RetailDW schema: dimensions, temporal FactSales, staging, ETL. |
 
 This is consistent with the ticket: per conventions, `DeploymentHistory` only gets a row for deployments that **backfill or migrate existing data**. The `NetAmount` change is a metadata-only view alteration (no `ALTER TABLE`, no data migration, no `PostDeployment.sql` backfill), so no new row was expected — confirming the "Schema vs Data Migration" section of the impact analysis.
+
+---
+
+_**User (2026-08-24 09:25:27Z)**_
+
+what would whole proces look like if we touched staging tables and affect whole etl flow ?
+- list
+
+---
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `change-impact-analysis-procedure.md`
+
+**Input:**
+
+- endLine: `200`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\docs\change-impact-analysis-procedure.md`
+- startLine: `1`
+
+**Result:**
+
+```
+---
+
+name: impact-analysis
+
+description: 'TODO ? one-line "Use when..." description with trigger keywords (e.g. impact analysis, before implementing a multi-object change, dependency mapping, risk assessment).'
+
+---
+
+
+
+# Impact Analysis
+
+
+
+<!-- TODO: one or two sentences on what this skill produces and when to reach for it. -->
+
+
+
+## Procedure
+
+
+
+<!--
+
+TODO: list the steps this skill should follow, e.g.:
+
+1. Objects involved / changed
+
+2. Which procedures/functions/views uses changed objects
+
+3. Required changes
+
+4. Risks
+
+- Temporal / Logging / MERGE Impact
+
+- Type, Nullability, and Source
+
+
+- Schema vs Data Migration
+
+- Sequencing
+
+- Open Questions
+
+5. Validation / Testing methods 
+-->
+
+
+
+## Output
+
+
+
+Use [impact-analysis-template.md](./impact-analysis-template.md) to structure the result.
+
+
+
+<!-- TODO: where should the completed document be saved? -->
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read skill `schema-change-impact-analysis`
+
+**Input:**
+
+- endLine: `300`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\skills\schema-change-impact-analysis\SKILL.md`
+- startLine: `1`
+
+**Result:**
+
+```
+---
+name: schema-change-impact-analysis
+description: 'Use before implementing any RetailDW schema/data-model change (new column, table, temporal or MERGE change, view/procedure edit). Produces an impact analysis mapping data flow, affected objects, temporal/MERGE risk, and open questions before code changes. Trigger keywords: impact analysis, dependency mapping, risk assessment, before implementing a multi-object change, what does this change touch.'
+argument-hint: 'Reference a ticket-*.md file or describe the schema change'
+---
+
+# Schema Change Impact Analysis
+
+Maps every object and data flow touched by a proposed RetailDW schema/data
+change, and the risks (temporal versioning, MERGE, migration, sequencing)
+before any code is written.
+
+## When to Use
+
+- Before implementing a change to any `RetailDW/` schema object (`Tables/`,
+  `Views/`, `Procedures/`, `Functions/`, `Sequences/`) — new columns, temporal
+  table changes, MERGE logic changes, view/procedure edits.
+- Before touching `dbo.FactSales` / `dbo.FactSalesHistory` (system-versioned)
+  or any MERGE-based ETL procedure (`etl.LoadFactSales`).
+- When a ticket affects more than one object and needs every downstream
+  consumer mapped before a plan is written.
+
+## Prerequisite: the ticket must already be clarified
+
+This skill does not gather requirements and does not ask clarifying questions
+about the business ask itself.
+
+1. Ask the user whether the ticket/request is already clarified and complete
+   (testable acceptance criteria, owner, sign-off).
+2. If they are not sure or say no, stop and tell them to clarify it first —
+   run the `ticket-clarification` skill, or have them complete it — before
+   continuing with this skill.
+
+## Procedure
+
+1. **Objects involved / changed** — enumerate every actual file path under
+   `RetailDW/` that the change touches or reads from (Tables, Views,
+   Procedures, Functions, Sequences). Cite real paths, not guesses.
+2. **Trace consumers** — for
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Based on this repo's actual conventions (`AGENTS.md`, the `schema-change-impact-analysis` skill, `change-impact-analysis-procedure.md`, `sql-conventions.instruction.md`), here's what the process would look like for a change touching `stg.Sales` and the full ETL flow — not a hypothetical process I'm inventing, but the one this repo mandates:
+
+1. **Ticket clarification first** — confirm the ticket has testable acceptance criteria, owner, and sign-off (`ticket-clarification` skill). A staging/ETL change is exactly the kind of multi-object change this repo requires to be clarified before analysis starts.
+
+2. **Run schema-change-impact-analysis** (mandatory before any code, per `AGENTS.md` and the skill) — for a staging + ETL-wide change this expands to:
+   - **Objects involved**: `RetailDW/Tables/stg.Sales.sql`, `RetailDW/Procedures/etl.LoadFactSales.sql`, `RetailDW/Tables/dbo.FactSales.sql`, `RetailDW/Tables/dbo.FactSalesHistory.sql`, `RetailDW/Tables/dbo.LoadLog.sql`, `RetailDW/Procedures/etl.PurgeStaging.sql`, and any downstream reporting object that reads `FactSales` (both views + `RetailDW/Procedures/reporting.usp_SalesSummaryByMonth.sql`).
+   - **Trace consumers**: search for every reader/writer of the changed staging column(s) — includes seed/test data (`data/01-staging-batch-1.sql`, `tests/smoke-test.sql`) since those hard-code row counts and column expectations.
+   - **Temporal/MERGE risk**: since `etl.LoadFactSales` uses `MERGE` into system-versioned `dbo.FactSales`, any change to the MERGE's match/insert/update clauses changes what gets versioned into `dbo.FactSalesHistory` — this needs explicit backfill/rollback thinking, not an assumption that "MERGE just works."
+   - **Type/nullability/source**: for every new/changed staging column, state its type in `stg.Sales`, how it's validated/rejected during load (see `LoadLog.RowsRejected` pattern), and how it maps to the `FactSales` column.
+   - **Schema vs data migration**: decide if this is metadata-only or needs a `Scripts/PostDeployment.sql` backfill + a `dbo.DeploymentHistory` row (per the convention, only migrations that touch existing data get a row there).
+   - **Sequencing**: staging schema change → publish → re-seed staging → re-run `etl.LoadFactSales` → verify `FactSales`/`FactSalesHistory` → re-publish reporting views if their shape changed.
+   - **Open questions**: anything the ticket doesn't explicitly answer (e.g. how to treat already-loaded historical rows, rejection rule changes) goes here — never silently decided.
+
+3. **Present the plan per `AGENTS.md`'s required format** before touching any file: data flow/objects touched → open questions → step-by-step change list in dependency order → test plan → rollback/backfill note.
+
+4. **Human confirms the plan** — no code changes happen before this, per both `AGENTS.md` and the skill's "Core Rule."
+
+5. **Implement in dependency order**, e.g.: `stg.Sales` → `etl.LoadFactSales` (MERGE logic) → `dbo.FactSales`/`FactSalesHistory` if columns change → downstream views/procedures → `Scripts/PostDeployment.sql` backfill if needed.
+
+6. **Validate**: `.`dw.sh` build` → `publish` → `seed` → `etl` → extend and run `.`dw.sh` smoke`, plus check `dbo.DeploymentHistory` if a backfill was involved.
+
+7. **Save the impact analysis** to `analyses/impact-analysis-<ticket-id>.md`, same pattern as `analyses/impact-analysis-DPO-1187.md`.
+
+I haven't run this for a real ticket yet — if you have a specific staging/ETL change in mind, I'd need the ticket details (or you to confirm it's already clarified) before producing the actual impact analysis.
+
+---
+
+_**User (2026-08-24 09:26:31Z)**_
+
+should this change PostDeployment and DeploymentHistory. How? Why?
+
+---
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `PostDeployment.sql`
+
+**Input:**
+
+- endLine: `200`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Scripts\PostDeployment.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+/*
+Post-deployment script
+----------------------
+Runs AFTER the schema diff is applied.
+
+Responsibilities:
+  1. Seed / refresh reference (dimension) data.
+  2. Run data migrations for this release.
+  3. Append one row to [dbo].[DeploymentHistory].
+
+Keep every statement idempotent - this script runs on every publish.
+*/
+PRINT N'[PostDeployment] start';
+GO
+
+:r .\Seed\DimProduct.sql
+GO
+
+:r .\Seed\DimStore.sql
+GO
+
+-- ---------------------------------------------------------------------------
+-- Deployment audit
+-- ---------------------------------------------------------------------------
+IF NOT EXISTS (SELECT 1 FROM [dbo].[DeploymentHistory] WHERE [ScriptName] = N'baseline')
+BEGIN
+    INSERT INTO [dbo].[DeploymentHistory] ([ScriptName], [Notes])
+    VALUES (N'baseline', N'Initial RetailDW schema: dimensions, temporal FactSales, staging, ETL.');
+END
+GO
+
+PRINT N'[PostDeployment] end';
+GO
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `dbo.DeploymentHistory.sql`
+
+**Input:**
+
+- endLine: `60`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Tables\dbo.DeploymentHistory.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+-- Audit trail of database deployments. Every post-deployment run must append
+-- exactly one row describing what was applied.
+CREATE TABLE [dbo].[DeploymentHistory]
+(
+    [DeploymentId]  INT             IDENTITY (1, 1) NOT NULL,
+    [ScriptName]    NVARCHAR (200)  NOT NULL,
+    [AppliedAt]     DATETIME2 (3)   NOT NULL CONSTRAINT [DF_DeploymentHistory_AppliedAt] DEFAULT (SYSUTCDATETIME()),
+    [AppliedBy]     NVARCHAR (128)  NOT NULL CONSTRAINT [DF_DeploymentHistory_AppliedBy] DEFAULT (SUSER_SNAME()),
+    [Notes]         NVARCHAR (1000) NULL,
+    CONSTRAINT [PK_DeploymentHistory] PRIMARY KEY CLUSTERED ([DeploymentId] ASC),
+    CONSTRAINT [UQ_DeploymentHistory_ScriptName] UNIQUE NONCLUSTERED ([ScriptName] ASC)
+);
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+No — this DPO-1187 change should **not** touch `PostDeployment.sql` or add a row to `DeploymentHistory`.
+
+**Why:**
+- Per `.github/instructions/sql-conventions.instruction.md`: *"Every deployment that backfills or migrates existing data appends exactly one row to `dbo.DeploymentHistory`."* The trigger is data migration/backfill, not "any deployment."
+- `NetAmount` is a computed expression (`GrossAmount / (1 + VatRate)`) added to two `CREATE VIEW` definitions — no `ALTER TABLE`, no existing rows are modified, nothing needs backfilling. This was already the conclusion in the "Schema vs Data Migration" section of `analyses/impact-analysis-DPO-1187.md`.
+- I verified this empirically after publish: `dbo.DeploymentHistory` still has exactly the original 1 row (`ScriptName = 'baseline'`) — nothing else auto-inserts a row, and this view-only change doesn't warrant adding one manually.
+
+**How it *would* work, if a future change did need it** (for contrast — e.g. a staging/ETL change that backfills `FactSales`):
+- `RetailDW/Scripts/PostDeployment.sql` would get a new guarded block, following the existing `baseline` pattern:
+  ```sql
+  IF NOT EXISTS (SELECT 1 FROM [dbo].[DeploymentHistory] WHERE [ScriptName] = N'DPO-XXXX')
+  BEGIN
+      INSERT INTO [dbo].[DeploymentHistory] ([ScriptName], [Notes])
+      VALUES (N'DPO-XXXX', N'<what this migration/backfill did>');
+  END
+  GO
+  ```
+- The `IF NOT EXISTS` + `UQ_DeploymentHistory_ScriptName` unique constraint make it idempotent and one-time — required since `PostDeployment.sql` reruns on every publish.
+- `ScriptName` should be a distinct, stable identifier (ticket ID works, matching the `baseline` precedent) so it never collides with or re-fires for unrelated deployments.
+
+For DPO-1187 specifically, no such block is needed since there's no data being migrated.
+
+---
+
+_**User (2026-08-24 09:39:21Z)**_
+
+/create-skill schema-change-implementation
+
+When to use
+Use this skill once a change has an approved plan (e.g. from the impact-analysis skill, or a confirmed simple ticket spec). This skill implements the plan; it does not decide scope on its own. If the plan leaves a question open, stop and ask rather than deciding it here.
+
+- handle schema/view only VS pipleline/backfill/migration 
+- Pre post deployment
+
+Inputs required before starting
+The ticket reference (e.g. DPO-1204).
+The approved analysis/plan: which objects change, the field's type/nullability, its source of truth, and any temporal/migration note.
+
+1. Update table definitions.
+
+2. Propagate the value through the pipeline.
+- stg.<Table>: land the raw value (staging is nullable/untrusted as per analysis)
+- TL procedure's temp table (e.g. #FtData in etl.LoadFactSales): add the column to the CREATE TABLE #... definition and to the validating SELECT/CTE that populates it.
+MERGE statement: add the column to
+the WHEN MATCHED AND (...) change-detection predicate (so updates are actually detected),
+the WHEN MATCHED THEN UPDATE SET list,
+the WHEN NOT MATCHED BY TARGET THEN INSERT column list and VALUES list.
+Target fact table: confirm the new column lands via the MERGE, not a separate statement.
+
+3. Update history and logging objects.
+- History table (e.g. dbo.FactSalesHistory): required whenever the main temporal table's column list changes ? SYSTEM_VERSIONING requires the history table shape to match.
+- Audit/log tables (e.g. dbo.LoadLog): only if the plan says the field belongs at the load level, not the row level. Do not add it there "just in case" ? if the plan didn't decide this, treat it as an open question instead of guessing.
+
+4. Add doc and the changelog comment section to every object ddl file.
+- Fill in the real date, author, ticket number, and a one-line description of what changed in that file specifically.
+
+Review before finishing
+
+Diff the changed files against the plan: every touched file should be traceable to a step in the plan; nothing extra.
+
+Do not touch RetailDW/Scripts/Seed/* or RetailDW/Security/* unless the ticket explicitly requires new schemas or reference data 
+
+Re-check any point in the plan marked as an open question ? implementation must not silently resolve it. Surface it back to the human instead.
+
+
+---
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read skill `agent-customization`
+
+**Input:**
+
+- endLine: `400`
+- filePath: `c:\Users\teamsharq\AppData\Local\Programs\Microsoft VS Code\a5b5009513\resources\app\extensions\copilot\assets\prompts\skills\agent-customization\SKILL.md`
+- startLine: `1`
+
+**Result:**
+
+```
+---
+name: agent-customization
+user-invocable: false # don't show as slash command, we have sepcialized create-agent, create-instructions, create-hook prompts for that
+description: '**WORKFLOW SKILL** — Create, update, review, fix, or debug VS Code agent customization files (.instructions.md, .prompt.md, .agent.md, SKILL.md, copilot-instructions.md, AGENTS.md). USE FOR: saving coding preferences; troubleshooting why instructions/skills/agents are ignored or not invoked; configuring applyTo patterns; defining tool restrictions; creating custom agent modes or specialized workflows; packaging domain knowledge; fixing YAML frontmatter syntax. DO NOT USE FOR: general coding questions (use default agent); runtime debugging or error diagnosis; MCP server configuration (use MCP docs directly); VS Code extension development. INVOKES: file system tools (read/write customization files), ask-questions tool (interview user for requirements), subagents for codebase exploration. FOR SINGLE OPERATIONS: For quick YAML frontmatter fixes or creating a single file from a known pattern, edit the file directly — no skill needed.'
+---
+
+# Agent Customization
+
+## Decision Flow
+
+| Primitive | When to Use |
+|-----------|-------------|
+| agent instructions | Always-on, applies everywhere in the project |
+| File Instructions | Explicit via `applyTo` patterns, or on-demand via `description` |
+| MCP | Integrates external systems, APIs, or data |
+| Hooks | Deterministic shell commands at agent lifecycle points (block tools, auto-format, inject context) |
+| Custom Agents | Subagents for context isolation, or multi-stage workflows with tool restrictions |
+| Prompts | Single focused task with parameterized inputs |
+| Skills | On-demand workflow with bundled assets (scripts/templates) |
+
+## Quick Reference
+
+Consult the reference docs for templates, domain examples, advanced frontmatter options, asset organization, anti-patterns, and creation checklists. If the references are not enough, load the offici
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read skill `agent-customization`: `skills.md`
+
+**Input:**
+
+- endLine: `250`
+- filePath: `c:\Users\teamsharq\AppData\Local\Programs\Microsoft VS Code\a5b5009513\resources\app\extensions\copilot\assets\prompts\skills\agent-customization\references\skills.md`
+- startLine: `1`
+
+**Result:**
+
+````
+# [Agent Skills (SKILL.md)](https://code.visualstudio.com/docs/copilot/customization/agent-skills)
+
+Folders of instructions, scripts, and resources that agents load on-demand for specialized tasks.
+
+## Structure
+
+```
+.github/skills/<skill-name>/
+├── SKILL.md           # Required (name must match folder)
+├── scripts/           # Executable code
+├── references/        # Docs loaded as needed
+└── assets/            # Templates, boilerplate
+```
+
+## Locations
+
+| Path | Scope |
+|------|-------|
+| `.github/skills/<name>/` | Project |
+| `.agents/skills/<name>/` | Project |
+| `.claude/skills/<name>/` | Project |
+| `~/.copilot/skills/<name>/` | Personal |
+| `~/.agents/skills/<name>/` | Personal |
+| `~/.claude/skills/<name>/` | Personal |
+
+## SKILL.md Format
+
+```yaml
+---
+name: skill-name              # Required: 1-64 chars, lowercase alphanumeric + hyphens, must match folder
+description: 'What and when to use. Max 1024 chars.'
+argument-hint: 'Optional hint shown for slash invocation'
+user-invocable: true          # Optional: show as slash command (default: true)
+disable-model-invocation: false # Optional: disable automatic model-triggered loading
+---
+```
+
+### Body
+
+- What the skill accomplishes
+- When to use (triggers and use cases)
+- Step-by-step procedures
+- References to resources: `[script](./scripts/test.js)`
+
+## Template
+
+```markdown
+---
+name: webapp-testing
+description: 'Test web applications using Playwright. Use for verifying frontend, debugging UI, capturing screenshots.'
+---
+
+# Web Application Testing
+
+## When to Use
+- Verify frontend functionality
+- Debug UI behavior
+
+## Procedure
+1. Start the web server
+2. Run [test script](./scripts/test.js)
+3. Review screenshots in `./screenshots/`
+```
+
+## Progressive Loading
+
+1. **Discovery** (~100 tokens): Agent reads `name` and `description`
+2. **Instructions** (<5000 tokens): Loads `SKILL.md` body when relevant
+3. **Resources**: Additional files load only when referenced
+
+Keep file references one level deep from `SKILL.md`.
+
+… (output truncated)
+````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `SKILL.md`
+
+**Input:**
+
+- content:
+
+```
+---
+name: schema-change-implementation
+description: 'Use once a RetailDW schema/data-model change has an approved plan (from the schema-change-impact-analysis skill, or a confirmed simple ticket spec) and is ready to be implemented. Applies table, staging, ETL MERGE, history, logging, and pre/post-deployment changes for a given ticket. Trigger keywords: implement the plan, apply impact analysis, schema-change-implementation, add column to pipeline, propagate column through ETL, backfill existing rows.'
+argument-hint: 'Reference a ticket ID (e.g. DPO-1204) and the approved analysis/plan'
+---
+
+# Schema Change Implementation
+
+Implements an already-approved RetailDW schema/data-model change: table
+definitions, the staging → ETL → fact pipeline, temporal history objects,
+pre/post-deployment scripts, and file headers/changelogs. This skill
+executes a plan; it does not decide scope.
+
+## Prerequisite: the plan must already exist and be approved
+
+This skill does not perform impact analysis or decide business scope.
+
+1. Confirm you have: the ticket reference, and the approved analysis/plan
+   stating which objects change, the field's type/nullability, its source
+   of truth, and any temporal/migration note.
+2. If no plan exists yet, or the change touches more than one object,
+   `FactSales`, or a MERGE procedure, stop and run
+   `schema-change-impact-analysis` first instead of guessing at scope here.
+3. If the plan leaves a question open, stop and ask — do not decide it
+   during implementation.
+
+## Step 0: Classify the change from the plan
+
+Read the plan's "Schema vs Data Migration" section before touching files,
+and follow only the branch(es) it calls for:
+
+- **View/procedure-only** (e.g. a computed column added to a view, no new
+  stored column): do Step 4 (docs) and the object edit only. Skip Steps 1–3.
+- **Column/pipeline change** (a new/changed stored column flows through
+  staging and ETL): do Steps 1–4 in full.
+- **Migration/backfill** (existing rows need populating — e.g. a new
+  `NOT NULL` column with historical data): also do Step 5.
+
+If the plan doesn't say which branch applies, that's an open question —
+ask, don't infer it from the DDL alone.
+
+## Procedure
+
+1. **Update table definitions** — apply the column/type change to the base
+   table(s) named in the plan.
+
+2. **Propagate the value through the pipeline** (skip any object the plan
+   doesn't call for changing):
+   - `stg.<Table>`: land the raw value — staging stays nullable/untrusted,
+     per the plan's source-of-truth note.
+   - The load procedure's temp table (e.g. `#FtData` in
+     `etl.LoadFactSales`): add the column to the `CREATE TABLE #...`
+     definition and to the validating `SELECT`/CTE that populates it.
+   - `MERGE` statement: add the column to
+     - the `WHEN MATCHED AND (...)` change-detection predicate (otherwise
+       updates on that column go undetected),
+     - the `WHEN MATCHED THEN UPDATE SET` list,
+     - the `WHEN NOT MATCHED BY TARGET THEN INSERT` column list and
+       `VALUES` list.
+   - Target fact table: confirm the new column lands only via the `MERGE`,
+     not a separate statement outside it.
+
+3. **Update history and logging objects**:
+   - History table (e.g. `dbo.FactSalesHistory`): required whenever the
+     temporal table's column list changes — `SYSTEM_VERSIONING` requires
+     the history table shape to match the current table.
+   - Audit/log tables (e.g. `dbo.LoadLog`): only if the plan explicitly
+     says the field belongs at the load level, not the row level. If the
+     plan didn't decide this, treat it as an open question instead of
+     guessing.
+
+4. **Add the doc header and changelog entry** to every object DDL file
+   touched, per `sql-conventions.instruction.md` — real date, author,
+   ticket number, and a one-line description of what changed in that file.
+
+5. **Migration/backfill only** — if Step 0 classified this as a migration:
+   - Add idempotent backfill logic to `Scripts/PreDeployment.sql` (if it
+     must run before the schema diff) or `Scripts/PostDeployment.sql` (if
+     after) — never a hand-run `ALTER`/`UPDATE` outside these scripts.
+   - Append exactly one new guarded row to `dbo.DeploymentHistory`,
+     following the existing `baseline` pattern (`IF NOT EXISTS ... INSERT`,
+     unique `ScriptName` such as the ticket ID).
+   - Do not add a `DeploymentHistory` row for metadata-only changes (new
+     nullable column, view/procedure edit) — that's Step 0's other branches.
+
+## Review Before Finishing
+
+- Diff the changed files against the plan: every touched file must trace
+  back to a step in the plan; nothing extra.
+- Do not touch `RetailDW/Scripts/Seed/*` or `RetailDW/Security/*` unless the
+  ticket explicitly requires new schemas or reference data.
+- Re-check every point the plan marked as an open question — implementation
+  must not silently resolve it. Surface it back to the human instead.
+- Confirm the test plan from the analysis has a matching change in
+  `tests/`, and note that `./scripts/dw.sh smoke` should be re-run.
+
+## Core Rule
+
+This skill implements; it does not decide. Any question the plan didn't
+answer stays open and goes back to the human, never a silent assumption
+made during implementation.
+
+```
+
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\skills\schema-change-implementation\SKILL.md`
+
+**Result:**
+
+```
+The following files were successfully edited:
+c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\skills\schema-change-implementation\SKILL.md
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **SKILL.md**</summary>
+
+@@ lines 1-1 @@
+
+```
+---
+name: schema-change-implementation
+description: 'Use once a RetailDW schema/data-model change has an approved plan (from the schema-change-impact-analysis skill, or a confirmed simple ticket spec) and is ready to be implemented. Applies table, staging, ETL MERGE, history, logging, and pre/post-deployment changes for a given ticket. Trigger keywords: implement the plan, apply impact analysis, schema-change-implementation, add column to pipeline, propagate column through ETL, backfill existing rows.'
+argument-hint: 'Reference a ticket ID (e.g. DPO-1204) and the approved analysis/plan'
+---
+
+# Schema Change Implementation
+
+Implements an already-approved RetailDW schema/data-model change: table
+definitions, the staging → ETL → fact pipeline, temporal history objects,
+pre/post-deployment scripts, and file headers/changelogs. This skill
+executes a plan; it does not decide scope.
+
+## Prerequisite: the plan must already exist and be approved
+
+This skill does not perform impact analysis or decide business scope.
+
+1. Confirm you have: the ticket reference, and the approved analysis/plan
+   stating which objects change, the field's type/nullability, its source
+   of truth, and any temporal/migration note.
+2. If no plan exists yet, or the change touches more than one object,
+   `FactSales`, or a MERGE procedure, stop and run
+   `schema-change-impact-analysis` first instead of guessing at scope here.
+3. If the plan leaves a question open, stop and ask — do not decide it
+   during implementation.
+
+## Step 0: Classify the change from the plan
+
+Read the plan's "Schema vs Data Migration" section before touching files,
+and follow only the branch(es) it calls for:
+
+- **View/procedure-only** (e.g. a computed column added to a view, no new
+  stored column): do Step 4 (docs) and the object edit only. Skip Steps 1–3.
+- **Column/pipeline change** (a new/changed stored column flows through
+  staging and ETL): do Steps 1–4 in full.
+- **Migration/backfill** (existing rows need populating — e.g. a new
+  `NOT NULL` column with historical data): also do Step 5.
+
+If the plan doesn't say which branch applies, that's an open question —
+ask, don't infer it from the DDL alone.
+
+## Procedure
+
+1. **Update table definitions** — apply the column/type change to the base
+   table(s) named in the plan.
+
+2. **Propagate the value through the pipeline** (skip any object the plan
+   doesn't call for changing):
+   - `stg.<Table>`: land the raw value — staging stays nullable/untrusted,
+     per the plan's source-of-truth note.
+   - The load procedure's temp table (e.g. `#FtData` in
+     `etl.LoadFactSales`): add the column to the `CREATE TABLE #...`
+     definition and to the validating `SELECT`/CTE that populates it.
+   - `MERGE` statement: add the column to
+     - the `WHEN MATCHED AND (...)` change-detection predicate (otherwise
+       updates on that column go undetected),
+     - the `WHEN MATCHED THEN UPDATE SET` list,
+     - the `WHEN NOT MATCHED BY TARGET THEN INSERT` column list and
+       `VALUES` list.
+   - Target fact table: confirm the new column lands only via the `MERGE`,
+     not a separate statement outside it.
+
+3. **Update history and logging objects**:
+   - History table (e.g. `dbo.FactSalesHistory`): required whenever the
+     temporal table's column list changes — `SYSTEM_VERSIONING` requires
+     the history table shape to match the current table.
+   - Audit/log tables (e.g. `dbo.LoadLog`): only if the plan explicitly
+     says the field belongs at the load level, not the row level. If the
+     plan didn't decide this, treat it as an open question instead of
+     guessing.
+
+4. **Add the doc header and changelog entry** to every object DDL file
+   touched, per `sql-conventions.instruction.md` — real date, author,
+   ticket number, and a one-line description of what changed in that file.
+
+5. **Migration/backfill only** — if Step 0 classified this as a migration:
+   - Add idempotent backfill logic to `Scripts/PreDeployment.sql` (if it
+     must run before the schema diff) or `Scripts/PostDeployment.sql` (if
+     after) — never a hand-run `ALTER`/`UPDATE` outside these scripts.
+   - Append exactly one new guarded row to `dbo.DeploymentHistory`,
+     following the existing `baseline` pattern (`IF NOT EXISTS ... INSERT`,
+     unique `ScriptName` such as the ticket ID).
+   - Do not add a `DeploymentHistory` row for metadata-only changes (new
+     nullable column, view/procedure edit) — that's Step 0's other branches.
+
+## Review Before Finishing
+
+- Diff the changed files against the plan: every touched file must trace
+  back to a step in the plan; nothing extra.
+- Do not touch `RetailDW/Scripts/Seed/*` or `RetailDW/Security/*` unless the
+  ticket explicitly requires new schemas or reference data.
+- Re-check every point the plan marked as an open question — implementation
+  must not silently resolve it. Surface it back to the human instead.
+- Confirm the test plan from the analysis has a matching change in
+  `tests/`, and note that `./scripts/dw.sh smoke` should be re-run.
+
+## Core Rule
+
+This skill implements; it does not decide. Any question the plan didn't
+answer stays open and goes back to the human, never a silent assumption
+made during implementation.
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Created `.github/skills/schema-change-implementation/SKILL.md` as the companion to `schema-change-impact-analysis`, saved as a workspace skill (matches the existing sibling's location/scope — no ambiguity there).
+
+I added two things beyond your raw draft, both worth confirming since they're the weakest/most inferred parts:
+
+1. **Step 0 branching** — I made "view/procedure-only vs column/pipeline vs migration/backfill" an explicit first classification step (reading the plan's "Schema vs Data Migration" section) rather than an implicit note under "When to use," so the procedure doesn't default to doing pipeline/MERGE work on a view-only change like DPO-1187.
+2. **Step 5 (migration/backfill)** — I added the `Scripts/PreDeployment.sql` / `Scripts/PostDeployment.sql` + guarded `dbo.DeploymentHistory` insert pattern as an explicit step, based on the convention and pattern we just confirmed in this session, gated so it only fires when Step 0 classifies the change as a migration.
+
+Questions before we finalize:
+- Does Step 0's three-way branch match how you want to decide "view vs pipeline vs backfill," or should that decision instead be an explicit input the impact-analysis skill hands off (rather than re-derived here)?
+- Should Step 5's `DeploymentHistory` `ScriptName` convention be pinned to something more specific than "the ticket ID" (e.g. a `<ticket>-<short-desc>` format)?
+
+Once confirmed, the skill's ready to use — trigger it with something like "implement DPO-1204 per the approved plan."
+
+---
+
+_**User (2026-08-24 09:45:20Z)**_
+
+<ticket>-<short-desc-slug> format
+
+---
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **SKILL.md**</summary>
+
+@@ lines 82-82 @@
+
+```
+in `<ticket>-<short-desc-slug>` format, e.g.
+     `DPO-1204-backfill-net-amount`
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Updated the `ScriptName` convention in `.github/skills/schema-change-implementation/SKILL.md` to `<ticket>-<short-desc-slug>` (e.g. `DPO-1204-backfill-net-amount`).
+
+Still open from before: whether Step 0's three-way branch (view-only / pipeline / migration) should be decided here or handed off explicitly by the impact-analysis skill — let me know if you want that changed too, otherwise the skill is finalized as-is.
+
+---
+
+_**User (2026-08-24 09:45:45Z)**_
+
+ handed off explicitly by the impact-analysis skill 
+
+---
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="list_dir"><details>
+<summary>Tool use: **list_dir**</summary>
+
+Read `schema-change-impact-analysis`
+
+**Input:**
+
+- path: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\skills\schema-change-impact-analysis`
+
+**Result:**
+
+```
+impact-analysis-template.md
+SKILL.md
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read skill `schema-change-impact-analysis`: `impact-analysis-template.md`
+
+**Input:**
+
+- endLine: `200`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\skills\schema-change-impact-analysis\impact-analysis-template.md`
+- startLine: `1`
+
+**Result:**
+
+```
+# Impact Analysis: <Ticket ID / Title>
+
+## Data Flow Touchpoints
+( list, optionally small mermaid diagrams )
+
+## Impact Matrix
+
+| Object | Required Change | Risk | Validation Method |
+| ------ | ---------------- | ---- | ------------------ |
+|        |                   |      |                     |
+
+## Temporal / Logging / MERGE Impact
+
+## Type, Nullability, and Source
+
+## Schema vs Data Migration
+
+## Sequencing
+
+## Open Questions
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **impact-analysis-template.md**</summary>
+
+@@ lines 18-18 @@
+
+```
+**Change Shape:** <one of: `view-only` (view/procedure edit, no stored column change) | `pipeline` (new/changed stored column flows through staging + ETL) | `migration` (existing rows need a backfill)>
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **SKILL.md**</summary>
+
+@@ lines 55-55 @@
+
+```
+ State this explicitly as a **Change
+     Shape** tag (`view-only` | `pipeline` | `migration`) in the template's
+     "Schema vs Data Migration" section — this is the field the
+     `schema-change-implementation` skill reads to decide which steps to
+     run, so it must be handed off explicitly, not left for that skill to
+     infer.
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **SKILL.md**</summary>
+
+@@ lines 27-40 @@
+
+```
+Read the change shape handed off by the plan
+
+This skill does not classify the change itself. The plan's "Schema vs Data
+Migration" section (produced by `schema-change-impact-analysis`) must state
+an explicit **Change Shape** tag — read that tag, don't re-derive it from
+the DDL:
+
+- **`view-only`** (e.g. a computed column added to a view, no new stored
+  column): do Step 4 (docs) and the object edit only. Skip Steps 1–3.
+- **`pipeline`** (a new/changed stored column flows through staging and
+  ETL): do Steps 1–4 in full.
+- **`migration`** (existing rows need populating — e.g. a new `NOT NULL`
+  column with historical data): also do Step 5.
+
+If the plan doesn't carry an explicit Change Shape tag, that's a gap in the
+plan, not something to infer here — stop and send it back to
+`schema-change-impact-analysis` (or ask the human) rather than guessing
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Done. The handoff is now explicit:
+
+- `.github/skills/schema-change-impact-analysis/impact-analysis-template.md`: the "Schema vs Data Migration" section now requires a **Change Shape** tag (`view-only` | `pipeline` | `migration`).
+- schema-change-impact-analysis/SKILL.md: its procedure now instructs producing that tag explicitly for the implementation skill to consume.
+- schema-change-implementation/SKILL.md: Step 0 now reads that tag rather than deriving it — if it's missing, the skill stops and sends it back to impact-analysis (or the human) instead of guessing.
+
+The DPO-1187 impact analysis document itself wasn't touched (not requested) — only the reusable skill templates.
