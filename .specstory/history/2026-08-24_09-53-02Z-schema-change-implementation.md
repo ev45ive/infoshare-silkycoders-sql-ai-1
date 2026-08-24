@@ -23,36 +23,981 @@ _**Agent (copilot/claude-sonnet-5)**_
 <summary>Tool use: **vscode_askQuestions**</summary>
 
 Analyzing your answers...
+
+**Input:**
+
+- questions:
+
+```
+[
+  {
+    "header": "Change Shape confirmation",
+    "options": [
+      {
+        "label": "Yes, view-only — proceed",
+        "recommended": true
+      },
+      {
+        "label": "No, something else changes too"
+      }
+    ],
+    "question": "Can you confirm the Change Shape for DPO-1187 is 'view-only' (no table/staging/ETL/history changes), so I only edit the two view files + tests?"
+  },
+  {
+    "header": "FactSalesHistory sign-off",
+    "options": [
+      {
+        "label": "Sign-off obtained — out of scope confirmed",
+        "recommended": true
+      },
+      {
+        "label": "Not yet obtained — hold implementation"
+      },
+      {
+        "label": "Proceed with default, sign-off pending in parallel"
+      }
+    ],
+    "question": "The plan lists Mateusz Kulesza's sign-off on FactSalesHistory/point-in-time scope as still outstanding. Has that sign-off been obtained, or should I proceed with the 'out of scope' default anyway?"
+  }
+]
+```
+
+
+**Result:**
+
+```
+{"answers":{"Change Shape confirmation":{"selected":["Yes, view-only — proceed"],"freeText":null,"skipped":false},"FactSalesHistory sign-off":{"selected":["Sign-off obtained — out of scope confirmed"],"freeText":null,"skipped":false}}}
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-5)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `sql-conventions.instruction.md`
+
+**Input:**
+
+- endLine: `200`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\instructions\sql-conventions.instruction.md`
+- startLine: `1`
+
+**Result:**
+
+````
+---
+description: SQL team conventions
+applyTo: *.sql
+---
+
+## Naming
+
+- **Schemas:** `dbo` (core warehouse), `stg` (staging, always disposable), `etl` (load procedures), and `reporting` (read-only consumer-facing objects).
+- **Tables:** `PascalCase`; dimensions are prefixed with `Dim`, and facts are prefixed with `Fact`.
+- **Constraints:** `PK_`, `FK_`, `UQ_`, `DF_` (default), `CK_` (check), and `IX_`/`UX_` (index).
+- Every object name is wrapped in brackets (`[brackets]`) in DDL to match the existing style.
+
+## File header doc comment
+
+- Every object file (`Tables/`, `Views/`, `Procedures/`, `Functions/`) starts with a top-of-file `/* ... */` block comment.
+- Required fields: `Author` (name + email; get from `git config user.name`/`user.email` if unknown), `AI model` (if AI-assisted), `Created` date, a business-facing `Description`, and a `Change log`.
+- `Change log` is a flat bullet list, one entry per change, in the form: `date | Ticket: <id or N/A> | author | model | description/commit message`. Newest entry last (append-only).
+- Never invent a ticket number for a real change — use `N/A` if none exists.
+- Add short (one line) inline comments next to columns/clauses whose intent isn't obvious from the code itself (e.g. a computed-elsewhere value, a non-obvious default, a temporal/system column). Don't restate what a line already says.
+
+### Template
+
+```sql
+/*
+    Author:      <Name> <email>
+    AI model:    <model name, or omit if not AI-assisted>
+    Created:     <YYYY-MM-DD>
+    Description: <business usage — why this object exists, who consumes it>
+
+    Change log:
+    - <YYYY-MM-DD> | Ticket: <id|N/A> | <author> | <model|N/A> | <description/commit message>
+*/
+```
+
+### Filled example
+
+```sql
+/*
+    Author:      Mateusz Kulesza <ev45ive@gmail.com>
+    AI model:    Claude Sonnet 5
+    Created:     2026-08-23
+    Description: System-versioned (temporal) fact table holding one row per sold
+                 order line. Sourc
+… (output truncated)
+````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-5)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `reporting.vw_DailySales.sql`
+
+**Input:**
+
+- endLine: `100`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Views\reporting.vw_DailySales.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+-- Daily sales aggregate used by the operational reporting layer.
+-- TODO (DPO-1187): reporting asked for a net amount column.
+CREATE VIEW [reporting].[vw_DailySales]
+AS
+SELECT  f.[SalesDate],
+        st.[Region],
+        p.[CategoryName],
+        SUM(f.[Quantity])       AS [Quantity],
+        SUM(f.[GrossAmount])    AS [GrossAmount],
+        SUM(f.[DiscountAmount]) AS [DiscountAmount],
+        COUNT_BIG(*)            AS [LineCount]
+FROM    [dbo].[FactSales]   AS f
+JOIN    [dbo].[DimProduct]  AS p  ON p.[ProductKey] = f.[ProductKey]
+JOIN    [dbo].[DimStore]    AS st ON st.[StoreKey]  = f.[StoreKey]
+GROUP BY f.[SalesDate], st.[Region], p.[CategoryName];
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-5)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `reporting.vw_WeeklySales.sql`
+
+**Input:**
+
+- endLine: `100`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Views\reporting.vw_WeeklySales.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+-- Weekly rollup. Week number comes from [dbo].[fn_SalesWeek] so that the
+-- business definition of a week lives in exactly one place.
+CREATE VIEW [reporting].[vw_WeeklySales]
+AS
+SELECT  DATEPART(YEAR, f.[SalesDate])   AS [SalesYear],
+        [dbo].[fn_SalesWeek](f.[SalesDate]) AS [SalesWeek],
+        st.[Region],
+        SUM(f.[Quantity])    AS [Quantity],
+        SUM(f.[GrossAmount]) AS [GrossAmount],
+        COUNT_BIG(*)         AS [LineCount]
+FROM    [dbo].[FactSales] AS f
+JOIN    [dbo].[DimStore]  AS st ON st.[StoreKey] = f.[StoreKey]
+GROUP BY DATEPART(YEAR, f.[SalesDate]),
+         [dbo].[fn_SalesWeek](f.[SalesDate]),
+         st.[Region];
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-5)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `smoke-test.sql`
+
+**Input:**
+
+- endLine: `400`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\tests\smoke-test.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+/*
+RetailDW smoke test
+-------------------
+Fast confidence check that the deployed database is usable.
+Fails loudly (RAISERROR severity 16) on the first broken assertion.
+
+Run AFTER:
+  1. sqlpackage publish
+  2. data\01-staging-batch-1.sql
+  3. EXEC etl.LoadFactSales @SourceSystem = N'POS'
+*/
+SET NOCOUNT ON;
+
+DECLARE @Failures INT = 0;
+
+-- ---------------------------------------------------------------------------
+PRINT N'--- 1. objects exist -------------------------------------------------';
+
+DECLARE @Expected TABLE ([ObjectName] SYSNAME NOT NULL);
+
+INSERT INTO @Expected ([ObjectName])
+VALUES (N'dbo.DimProduct'), (N'dbo.DimStore'), (N'dbo.FactSales'),
+       (N'dbo.FactSalesHistory'), (N'dbo.LoadLog'), (N'dbo.DeploymentHistory'),
+       (N'stg.Sales'), (N'etl.LoadFactSales'), (N'etl.PurgeStaging'),
+       (N'reporting.vw_DailySales'), (N'reporting.vw_WeeklySales'),
+       (N'reporting.usp_SalesSummaryByMonth'), (N'dbo.fn_SalesWeek');
+
+SELECT @Failures = @Failures + COUNT(*)
+FROM   @Expected AS e
+WHERE  OBJECT_ID(e.[ObjectName]) IS NULL;
+
+SELECT N'MISSING OBJECT' AS [Problem], e.[ObjectName]
+FROM   @Expected AS e
+WHERE  OBJECT_ID(e.[ObjectName]) IS NULL;
+
+-- ---------------------------------------------------------------------------
+PRINT N'--- 2. FactSales is system-versioned ---------------------------------';
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM   sys.tables AS t
+    JOIN   sys.tables AS h ON h.[object_id] = t.[history_table_id]
+    WHERE  t.[object_id] = OBJECT_ID(N'dbo.FactSales')
+      AND  t.[temporal_type] = 2                    -- SYSTEM_VERSIONED_TEMPORAL_TABLE
+      AND  h.[name] = N'FactSalesHistory')
+BEGIN
+    PRINT N'FAIL: dbo.FactSales is not system-versioned into dbo.FactSalesHistory';
+    SET @Failures += 1;
+END
+
+-- ---------------------------------------------------------------------------
+PRINT N'--- 3. dimensions are seeded -----------------------------------------';
+
+IF (SELECT COUNT(*) FRO
+… (output truncated)
+```
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git config user.name; git config user.email`
+
+Get git author name/email for the file header doc comment
+
+```bash
+git config user.name; git config user.email
+```
+
+**Result:**
+
+```
+Mateusz Kulesza
+ev45ive@gmail.com
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `01-staging-batch-1.sql`
+
+**Input:**
+
+- endLine: `60`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\data\01-staging-batch-1.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+/*
+Sample staging batch #1 for RetailDW.
+
+Deliberately contains rows that must be rejected or de-duplicated so that the
+baseline load exercises the validation logic in [etl].[LoadFactSales]:
+
+  * 8 clean rows            -> loaded
+  * 1 unknown ProductCode   -> rejected
+  * 1 unknown StoreCode     -> rejected
+  * 1 NULL Quantity         -> rejected
+  * 1 duplicate business key with a newer LoadedAt -> de-duplicated (newest wins)
+  * DiscountAmount NULL     -> treated as 0
+*/
+SET NOCOUNT ON;
+
+DELETE FROM [stg].[Sales];
+
+INSERT INTO [stg].[Sales]
+    ([SalesOrderNo], [SalesLineNo], [SalesDate], [ProductCode], [StoreCode],
+     [Quantity], [UnitPrice], [DiscountAmount], [SourceSystem], [LoadedAt])
+VALUES
+    -- clean rows -------------------------------------------------------------
+    (N'SO-2026-0001', 1, '2026-01-05', N'P-1001', N'S-WAW-01',  2.0000,  89.9900,  5.0000, N'POS', '2026-01-06T02:00:00'),
+    (N'SO-2026-0001', 2, '2026-01-05', N'P-3001', N'S-WAW-01',  1.0000,  24.5000,  NULL,   N'POS', '2026-01-06T02:00:00'),
+    (N'SO-2026-0002', 1, '2026-01-05', N'P-2001', N'S-KRK-01',  3.0000,  15.0000,  0.0000, N'POS', '2026-01-06T02:00:00'),
+    (N'SO-2026-0003', 1, '2026-01-06', N'P-4001', N'S-GDA-01', 10.0000,   6.9900,  2.5000, N'POS', '2026-01-07T02:00:00'),
+    (N'SO-2026-0003', 2, '2026-01-06', N'P-5001', N'S-GDA-01',  4.0000,   4.5000,  NULL,   N'POS', '2026-01-07T02:00:00'),
+    (N'SO-2026-0004', 1, '2026-01-07', N'P-1002', N'S-WRO-01',  1.0000,  42.0000,  0.0000, N'POS', '2026-01-08T02:00:00'),
+    (N'SO-2026-0005', 1, '2026-01-07', N'P-3002', N'S-WAW-02',  1.0000, 129.0000, 10.0000, N'POS', '2026-01-08T02:00:00'),
+    (N'SO-2026-0006', 1, '2026-02-02', N'P-2002', N'S-KRK-01',  5.0000,  18.0000,  0.0000, N'POS', '2026-02-03T02:00:00'),
+
+    -- rejected: product code not present in DimProduct -----------------------
+    (N'SO-2026-0007', 1, '2026-02-02', N'P-9999', N'S-KRK-01',  1.0000,  10.0000,  0.0000, N'POS', '2026-02-03T02
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `DimProduct.sql`
+
+**Input:**
+
+- endLine: `80`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Scripts\Seed\DimProduct.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+PRINT N'  seeding [dbo].[DimProduct]';
+
+MERGE [dbo].[DimProduct] AS tgt
+USING (VALUES
+    (1,  N'P-1001', N'Espresso Beans 1kg',   N'Coffee',     0.2300, 1),
+    (2,  N'P-1002', N'Filter Coffee 500g',   N'Coffee',     0.2300, 1),
+    (3,  N'P-2001', N'Green Tea 100g',       N'Tea',        0.2300, 1),
+    (4,  N'P-2002', N'Earl Grey 100g',       N'Tea',        0.2300, 1),
+    (5,  N'P-3001', N'Ceramic Mug',          N'Accessories',0.2300, 1),
+    (6,  N'P-3002', N'French Press 1L',      N'Accessories',0.2300, 1),
+    (7,  N'P-4001', N'Oat Milk 1L',          N'Dairy',      0.0500, 1),
+    (8,  N'P-4002', N'Whole Milk 1L',        N'Dairy',      0.0500, 1),
+    (9,  N'P-5001', N'Chocolate Bar 90g',    N'Snacks',     0.2300, 1),
+    (10, N'P-5002', N'Almond Cookies 200g',  N'Snacks',     0.2300, 0)
+) AS src ([ProductKey], [ProductCode], [ProductName], [CategoryName], [VatRate], [IsActive])
+    ON tgt.[ProductKey] = src.[ProductKey]
+WHEN MATCHED THEN UPDATE
+    SET tgt.[ProductCode]  = src.[ProductCode],
+        tgt.[ProductName]  = src.[ProductName],
+        tgt.[CategoryName] = src.[CategoryName],
+        tgt.[VatRate]      = src.[VatRate],
+        tgt.[IsActive]     = src.[IsActive]
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT ([ProductKey], [ProductCode], [ProductName], [CategoryName], [VatRate], [IsActive])
+    VALUES (src.[ProductKey], src.[ProductCode], src.[ProductName], src.[CategoryName], src.[VatRate], src.[IsActive]);
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `etl.LoadFactSales.sql`
+
+**Input:**
+
+- endLine: `200`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Procedures\etl.LoadFactSales.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+-- =============================================================================
+-- etl.LoadFactSales
+--
+-- Loads validated rows from [stg].[Sales] into the temporal fact table
+-- [dbo].[FactSales] and records the outcome in [dbo].[LoadLog].
+--
+-- Flow: stg.Sales -> #FtData -> MERGE -> dbo.FactSales (-> dbo.FactSalesHistory)
+-- =============================================================================
+CREATE PROCEDURE [etl].[LoadFactSales]
+    @SourceSystem NVARCHAR (20) = N'POS',
+    @LoadId       INT           = NULL OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    DECLARE @RowsInserted INT = 0,
+            @RowsUpdated  INT = 0,
+            @RowsRejected INT = 0;
+
+    -- Open the load log entry outside the transaction so that a failed load
+    -- still leaves an auditable trace.
+    INSERT INTO [dbo].[LoadLog] ([PackageName], [SourceSystem])
+    VALUES (N'etl.LoadFactSales', @SourceSystem);
+
+    SET @LoadId = CAST(SCOPE_IDENTITY() AS INT);
+
+    BEGIN TRY
+        CREATE TABLE #FtData
+        (
+            [SalesKey]       BIGINT          NULL,
+            [SalesOrderNo]   NVARCHAR (30)   NOT NULL,
+            [SalesLineNo]    INT             NOT NULL,
+            [SalesDate]      DATE            NOT NULL,
+            [ProductKey]     INT             NOT NULL,
+            [StoreKey]       INT             NOT NULL,
+            [Quantity]       DECIMAL (18, 4) NOT NULL,
+            [UnitPrice]      DECIMAL (18, 4) NOT NULL,
+            [DiscountAmount] DECIMAL (18, 4) NOT NULL,
+            [GrossAmount]    DECIMAL (18, 4) NOT NULL,
+            [VatRate]        DECIMAL (5, 4)  NOT NULL,
+            [SourceSystem]   NVARCHAR (20)   NOT NULL,
+            PRIMARY KEY CLUSTERED ([SalesOrderNo], [SalesLineNo])
+        );
+
+        -- Validate, resolve dimension keys and de-duplicate staging rows.
+        -- The latest staged row per business key wins.
+        WITH [Ranked] AS
+        (
+            SELECT  s.
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `DimStore.sql`
+
+**Input:**
+
+- endLine: `40`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Scripts\Seed\DimStore.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+PRINT N'  seeding [dbo].[DimStore]';
+
+MERGE [dbo].[DimStore] AS tgt
+USING (VALUES
+    (1, N'S-WAW-01', N'Warszawa Centrum',  N'Mazowieckie'),
+    (2, N'S-WAW-02', N'Warszawa Mokotow',  N'Mazowieckie'),
+    (3, N'S-KRK-01', N'Krakow Rynek',      N'Malopolskie'),
+    (4, N'S-GDA-01', N'Gdansk Wrzeszcz',   N'Pomorskie'),
+    (5, N'S-WRO-01', N'Wroclaw Stare Miasto', N'Dolnoslaskie')
+) AS src ([StoreKey], [StoreCode], [StoreName], [Region])
+    ON tgt.[StoreKey] = src.[StoreKey]
+WHEN MATCHED THEN UPDATE
+    SET tgt.[StoreCode] = src.[StoreCode],
+        tgt.[StoreName] = src.[StoreName],
+        tgt.[Region]    = src.[Region]
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT ([StoreKey], [StoreCode], [StoreName], [Region])
+    VALUES (src.[StoreKey], src.[StoreCode], src.[StoreName], src.[Region]);
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `dbo.fn_SalesWeek.sql`
+
+**Input:**
+
+- endLine: `50`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Functions\dbo.fn_SalesWeek.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+-- Business definition of a reporting week: ISO-8601 week number.
+-- NOTE: reporting expects Monday as the first day of the week regardless of
+-- the session DATEFIRST setting, hence the explicit ISO_WEEK datepart.
+CREATE FUNCTION [dbo].[fn_SalesWeek]
+(
+    @SalesDate DATE
+)
+RETURNS INT
+AS
+BEGIN
+    IF @SalesDate IS NULL
+        RETURN NULL;
+
+    RETURN DATEPART(ISO_WEEK, @SalesDate);
+END
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git log --diff-filter=A --follow --format="%ad" --date=short -- RetailDW/Vie...`
+
+Find the original creation date of the two view files from git history
+
+```bash
+git log --diff-filter=A --follow --format="%ad" --date=short -- RetailDW/Views/reporting.vw_DailySales.sql RetailDW/Views/reporting.vw_WeeklySales.sql
+```
+
+**Result:**
+
+```
+fatal: --follow requires exactly one pathspec
+
+Command exited with code 128
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git log --diff-filter=A --format="%ad" --date=short -- RetailDW/Views/report...`
+
+Find the original creation date of each view file from git history
+
+```bash
+git log --diff-filter=A --format="%ad" --date=short -- RetailDW/Views/reporting.vw_DailySales.sql; echo ---; git log --diff-filter=A --format="%ad" --date=short -- RetailDW/Views/reporting.vw_WeeklySales.sql
+```
+
+**Result:**
+
+```
+2026-08-20
+---
+2026-08-20
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **reporting.vw_DailySales.sql**</summary>
+
+@@ lines 1-10 @@
+
+```
+/*
+    Author:      Mateusz Kulesza <ev45ive@gmail.com>
+    AI model:    Claude Sonnet 5
+    Created:     2026-08-20
+    Description: Daily sales aggregate used by the operational reporting layer.
+
+    Change log:
+    - 2026-08-24 | Ticket: DPO-1187 | Mateusz Kulesza | Claude Sonnet 5 | Add NetAmount (VAT-exclusive) column
+*/
+CREATE VIEW [reporting].[vw_DailySales]
+AS
+SELECT  f.[SalesDate],
+        st.[Region],
+        p.[CategoryName],
+        SUM(f.[Quantity])       AS [Quantity],
+        SUM(f.[GrossAmount])    AS [GrossAmount],
+        SUM(f.[DiscountAmount]) AS [DiscountAmount],
+        CAST(SUM(f.[GrossAmount] / (1 + f.[VatRate])) AS DECIMAL(18, 4)) AS [NetAmount], -- VAT-exclusive; VatRate=0 rows pass through as GrossAmount
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **reporting.vw_WeeklySales.sql**</summary>
+
+@@ lines 1-12 @@
+
+```
+/*
+    Author:      Mateusz Kulesza <ev45ive@gmail.com>
+    AI model:    Claude Sonnet 5
+    Created:     2026-08-20
+    Description: Weekly rollup. Week number comes from [dbo].[fn_SalesWeek] so
+                 that the business definition of a week lives in exactly one
+                 place.
+
+    Change log:
+    - 2026-08-24 | Ticket: DPO-1187 | Mateusz Kulesza | Claude Sonnet 5 | Add NetAmount (VAT-exclusive) column
+*/
+CREATE VIEW [reporting].[vw_WeeklySales]
+AS
+SELECT  DATEPART(YEAR, f.[SalesDate])   AS [SalesYear],
+        [dbo].[fn_SalesWeek](f.[SalesDate]) AS [SalesWeek],
+        st.[Region],
+        SUM(f.[Quantity])    AS [Quantity],
+        SUM(f.[GrossAmount]) AS [GrossAmount],
+        CAST(SUM(f.[GrossAmount] / (1 + f.[VatRate])) AS DECIMAL(18, 4)) AS [NetAmount], -- VAT-exclusive; VatRate=0 rows pass through as GrossAmount
+        COUNT_BIG(*)         AS [LineCount]
+FROM    [dbo].[FactSales]  AS f
+JOIN    [dbo].[DimStore]   AS st ON st.[StoreKey] = f.[StoreKey]
+JOIN    [dbo].[DimProduct] AS p  ON p.[ProductKey] = f.[Product
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `dbo.FactSales.sql`
+
+**Input:**
+
+- endLine: `60`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Tables\dbo.FactSales.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+/*
+    Author:      Mateusz Kulesza <ev45ive@gmail.com>
+    AI model:    Claude Sonnet 5
+    Created:     2026-08-23
+    Description: System-versioned (temporal) fact table holding one row per sold
+                 order line. Source of truth for revenue/VAT reporting views and
+                 the monthly Excel summary refresh job.
+
+    Change log:
+    - 2026-08-23 | Ticket: DPO-1102* | Mateusz Kulesza | Claude Sonnet 5 | Remove Snapshot - will be added in next exercise
+
+    Comments:
+    * example ticket number - invented for illustration, not a real ticket.
+*/
+CREATE TABLE [dbo].[FactSales]
+(
+    [SalesKey]       BIGINT          NOT NULL,
+    [SalesOrderNo]   NVARCHAR (30)   NOT NULL,
+    [SalesLineNo]    INT             NOT NULL,
+    [SalesDate]      DATE            NOT NULL,
+    [ProductKey]     INT             NOT NULL,
+    [StoreKey]       INT             NOT NULL,
+    [Quantity]       DECIMAL (18, 4) NOT NULL,
+    [UnitPrice]      DECIMAL (18, 4) NOT NULL,
+    [DiscountAmount] DECIMAL (18, 4) NOT NULL CONSTRAINT [DF_FactSales_DiscountAmount] DEFAULT (0),
+    [GrossAmount]    DECIMAL (18, 4) NOT NULL, -- computed in ETL as (Quantity * UnitPrice) - DiscountAmount
+    [VatRate]        DECIMAL (5, 4)  NOT NULL, -- per-row rate; products can differ, so NetAmount is derived per row, not per group
+    [SourceSystem]   NVARCHAR (20)   NOT NULL,
+    [LoadId]         INT             NOT NULL,
+    [ValidFrom]      DATETIME2 (7)   GENERATED ALWAYS AS ROW START NOT NULL, -- system-versioning period; do not set manually
+    [ValidTo]        DATETIME2 (7)   GENERATED ALWAYS AS ROW END   NOT NULL,
+    CONSTRAINT [PK_FactSales] PRIMARY KEY CLUSTERED ([SalesKey] ASC),
+    CONSTRAINT [UQ_FactSales_OrderLine] UNIQUE NONCLUSTERED ([SalesOrderNo] ASC, [SalesLineNo] ASC),
+    CONSTRAINT [FK_FactSales_DimProduct] FOREIGN KEY ([ProductKey]) REFERENCES [dbo].[DimProduct] ([ProductKey]),
+    CONSTRAINT [FK_FactSales_DimStore] FOREIGN KEY ([StoreKey]) 
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Confirmed: `VatRate` already lives on `dbo.FactSales` directly (comment even calls out "NetAmount is derived per row, not per group"). No `DimProduct` join is needed in `vw_WeeklySales`. Removing the unnecessary join I added. 
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **reporting.vw_WeeklySales.sql**</summary>
+
+@@ lines 21-23 @@
+
+```
+AS f
+JOIN    [dbo].[DimStore]  AS st ON st.[StoreKey] = f.[Store
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Now updating the smoke test with the NetAmount assertions. 
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `reporting.vw_WeeklySales.sql`, lines 1 to 25
+
+**Input:**
+
+- endLine: `25`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Views\reporting.vw_WeeklySales.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+/*
+    Author:      Mateusz Kulesza <ev45ive@gmail.com>
+    AI model:    Claude Sonnet 5
+    Created:     2026-08-20
+    Description: Weekly rollup. Week number comes from [dbo].[fn_SalesWeek] so
+                 that the business definition of a week lives in exactly one
+                 place.
+
+    Change log:
+    - 2026-08-24 | Ticket: DPO-1187 | Mateusz Kulesza | Claude Sonnet 5 | Add NetAmount (VAT-exclusive) column
+*/
+CREATE VIEW [reporting].[vw_WeeklySales]
+AS
+SELECT  DATEPART(YEAR, f.[SalesDate])   AS [SalesYear],
+        [dbo].[fn_SalesWeek](f.[SalesDate]) AS [SalesWeek],
+        st.[Region],
+        SUM(f.[Quantity])    AS [Quantity],
+        SUM(f.[GrossAmount]) AS [GrossAmount],
+        CAST(SUM(f.[GrossAmount] / (1 + f.[VatRate])) AS DECIMAL(18, 4)) AS [NetAmount], -- VAT-exclusive; VatRate=0 rows pass through as GrossAmount
+        COUNT_BIG(*)         AS [LineCount]
+FROM    [dbo].[FactSales] AS f
+JOIN    [dbo].[DimStore]  AS st ON st.[StoreKey] = f.[StoreKey]
+GROUP BY DATEPART(YEAR, f.[SalesDate]),
+         [dbo].[fn_SalesWeek](f.[SalesDate]),
+         st.[Region];
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Good, that looks correct. Now adding the smoke-test assertions. 
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **smoke-test.sql**</summary>
+
+@@ lines 112-112 @@
+
+```
+-- SO-2026-0002/1 (Malopolskie/Tea, 2026-01-05) is the only fact row in its
+-- daily and weekly grouping, so its expected NetAmount can be computed from
+-- known seed values: GrossAmount = 3.0000 * 15.0000 - 0 = 45.0000,
+-- VatRate (P-2001/Tea) = 0.2300.
+PRINT N'--- 8. NetAmount is present and correct on vw_DailySales --------------';
+
+DECLARE @ExpectedNetAmount DECIMAL(18, 4) = CAST(45.0000 / (1 + 0.2300) AS DECIMAL(18, 4));
+DECLARE @DailyNetAmount DECIMAL(18, 4);
+
+SELECT @DailyNetAmount = [NetAmount]
+FROM   [reporting].[vw_DailySales]
+WHERE  [SalesDate] = '2026-01-05' AND [Region] = N'Malopolskie' AND [CategoryName] = N'Tea';
+
+IF @DailyNetAmount IS NULL
+BEGIN PRINT N'FAIL: vw_DailySales.NetAmount missing for 2026-01-05/Malopolskie/Tea'; SET @Failures += 1; END
+ELSE IF @DailyNetAmount <> @ExpectedNetAmount
+BEGIN
+    PRINT N'FAIL: vw_DailySales.NetAmount = ' + CAST(@DailyNetAmount AS NVARCHAR(20))
+        + N', expected ' + CAST(@ExpectedNetAmount AS NVARCHAR(20));
+    SET @Failures += 1;
+END
+
+-- ---------------------------------------------------------------------------
+PRINT N'--- 9. NetAmount is present and correct on vw_WeeklySales -------------';
+
+DECLARE @WeeklyNetAmount DECIMAL(18, 4);
+
+SELECT @WeeklyNetAmount = [NetAmount]
+FROM   [reporting].[vw_WeeklySales]
+WHERE  [SalesYear] = DATEPART(YEAR, '2026-01-05')
+   AND [SalesWeek] = [dbo].[fn_SalesWeek]('2026-01-05')
+   AND [Region]    = N'Malopolskie';
+
+IF @WeeklyNetAmount IS NULL
+BEGIN PRINT N'FAIL: vw_WeeklySales.NetAmount missing for the 2026-01-05 week/Malopolskie'; SET @Failures += 1; END
+ELSE IF @WeeklyNetAmount <> @ExpectedNetAmount
+BEGIN
+    PRINT N'FAIL: vw_WeeklySales.NetAmount = ' + CAST(@WeeklyNetAmount AS NVARCHAR(20))
+        + N', expected ' + CAST(@ExpectedNetAmount AS NVARCHAR(20));
+    SET @Failures += 1;
+END
+
+-- ---------------------------------------------------------------------------
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Now let me verify by building/publishing and running the smoke test. 
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` bash -c "./scripts/dw.sh build && ./scripts/dw.sh publish && ./scripts/dw.sh...`
+
+Rebuild the dacpac, publish the view changes, and run the smoke test
+
+```bash
+bash -c "./scripts/dw.sh build && ./scripts/dw.sh publish && ./scripts/dw.sh smoke"
+```
+
+**Result:**
+
+```
+Restore complete (0.4s)
+  RetailDW netstandard2.1 succeeded (3.1s) → RetailDW\bin\Debug\RetailDW.dacpac
+
+Build succeeded in 4.0s
+Publishing to database 'RetailDW' on server '127.0.0.1,14330'.
+Initializing deployment (Start)
+Initializing deployment (Complete)
+Analyzing deployment plan (Start)
+Analyzing deployment plan (Complete)
+Updating database (Start)
+[PreDeployment] start
+[PreDeployment] nothing to do
+[PreDeployment] end
+Dropping Check Constraint [dbo].[CK_LoadLog_Status]...
+Creating Check Constraint [dbo].[CK_LoadLog_Status]...
+Altering View [reporting].[vw_DailySales]...
+Altering View [reporting].[vw_WeeklySales]...
+[PostDeployment] start
+  seeding [dbo].[DimProduct]
+  seeding [dbo].[DimStore]
+[PostDeployment] end
+Checking existing data against newly created constraints
+Update complete.
+Updating database (Complete)
+Successfully published database.
+Time elapsed 0:00:05.81
+--- 1. objects exist -------------------------------------------------
+Problem        ObjectName                                                                                                                      
+-------------- --------------------------------------------------------------------------------------------------------------------------------
+--- 2. FactSales is system-versioned ---------------------------------
+--- 3. dimensions are seeded -----------------------------------------
+--- 4. baseline load result ------------------------------------------
+  dbo.FactSales rows          : 8
+  successful loads in LoadLog : 1
+  rejected rows (last load)   : 3
+--- 5. de-duplication picked the newest staged row -------------------
+--- 6. NULL discount became 0 ----------------------------------------
+--- 7. reporting layer is queryable ----------------------------------
+Region                                             CategoryName                                       Quantity                                 GrossAmount                              DiscountAmount                          
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for text `smoke` (`**/scripts/dw.sh`), 5 results
+
+**Input:**
+
+- includePattern: `scripts/dw.sh`
+- isRegexp: `false`
+- query: `smoke`
+
+**Result:**
+
+```
+Found 5 matches in 1 file for "smoke"
+
+scripts/dw.sh
+10:#   ./scripts/dw.sh smoke     run the smoke test
+14:#   ./scripts/dw.sh baseline  up + build + publish + seed + etl + smoke
+139:cmd_smoke() { f "$DB" "$ROOT/tests/smoke-test.sql"; }
+160:  cmd_smoke
+169:  smoke)    cmd_smoke ;;
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `vw_DailySales|GROUP BY|SELECT.*Region" -isRegexp true` (`**/tests/smoke-test.sql`), 6 results
+
+**Input:**
+
+- includePattern: `tests/smoke-test.sql`
+- isRegexp: `true`
+- query: `vw_DailySales|GROUP BY|SELECT.*Region" -isRegexp true`
+
+**Result:**
+
+```
+Found 6 matches in 1 file for "vw_DailySales|GROUP BY|SELECT.*Region" -isRegexp true"
+
+tests/smoke-test.sql
+25:       (N'reporting.vw_DailySales'), (N'reporting.vw_WeeklySales'),
+102:    SELECT @Sink = COUNT(*) FROM [reporting].[vw_DailySales];
+116:PRINT N'--- 8. NetAmount is present and correct on vw_DailySales --------------';
+122:FROM   [reporting].[vw_DailySales]
+126:BEGIN PRINT N'FAIL: vw_DailySales.NetAmount missing for 2026-01-05/Malopolskie/Tea'; SET @Failures += 1; END
+129:    PRINT N'FAIL: vw_DailySales.NetAmount = ' + CAST(@DailyNetAmount AS NVARCHAR(20))
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `reporting.usp_SalesSummaryByMonth.sql`
+
+**Input:**
+
+- endLine: `60`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Procedures\reporting.usp_SalesSummaryByMonth.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+-- Monthly sales summary consumed by the Excel refresh job.
+-- @YearMonth is passed as 'YYYY-MM' by the caller.
+CREATE PROCEDURE [reporting].[usp_SalesSummaryByMonth]
+    @YearMonth NVARCHAR (7)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT  st.[Region],
+            p.[CategoryName],
+            SUM(f.[Quantity])       AS [Quantity],
+            SUM(f.[GrossAmount])    AS [GrossAmount],
+            SUM(f.[DiscountAmount]) AS [DiscountAmount],
+            COUNT_BIG(*)            AS [LineCount]
+    FROM    [dbo].[FactSales]  AS f
+    JOIN    [dbo].[DimProduct] AS p  ON p.[ProductKey] = f.[ProductKey]
+    JOIN    [dbo].[DimStore]   AS st ON st.[StoreKey]  = f.[StoreKey]
+    WHERE   CONVERT(NVARCHAR (7), f.[SalesDate], 126) = @YearMonth
+    GROUP BY st.[Region], p.[CategoryName]
+    ORDER BY st.[Region], p.[CategoryName];
+END
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+That result set is from the pre-existing `reporting.usp_SalesSummaryByMonth` call in test 7 (unrelated to my change, out of scope per the ticket). Everything passed: build, publish, and smoke test (including new NetAmount assertions 8 and 9).
+
+## Summary
+
+Implemented DPO-1187 as a **view-only** change (confirmed by you), per the approved plan:
+
+- `RetailDW/Views/reporting.vw_DailySales.sql` and `RetailDW/Views/reporting.vw_WeeklySales.sql`: added `CAST(SUM(f.[GrossAmount] / (1 + f.[VatRate])) AS DECIMAL(18, 4)) AS [NetAmount]`, sourced directly from `FactSales.VatRate` (already per-row, no extra join needed — I initially added an unneeded `DimProduct` join to the weekly view and removed it after checking `dbo.FactSales.sql`).
+- Added the required doc header/changelog block to both files (they had none before); `Created` date pulled from `git log` rather than guessed.
+- `tests/smoke-test.sql`: added assertions 8–9 checking `NetAmount` exists and equals the expected value for the singleton `SO-2026-0002/1` group (`45.0000 / 1.2300 = 36.5854`) on both views.
+- No changes to `FactSales`, `FactSalesHistory`, `etl.LoadFactSales`, `Seed/*`, or `Security/*` — consistent with the view-only scope.
+- Build → publish → smoke all passed.
+
+Still open per the plan: Mateusz Kulesza's sign-off on the `FactSalesHistory`/point-in-time scope was marked as obtained per your answer, but it's worth double-checking that's recorded somewhere durable (e.g. the ticket itself), since the analysis file still shows it as outstanding.

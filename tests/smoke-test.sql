@@ -109,6 +109,49 @@ BEGIN CATCH
 END CATCH
 
 -- ---------------------------------------------------------------------------
+-- SO-2026-0002/1 (Malopolskie/Tea, 2026-01-05) is the only fact row in its
+-- daily and weekly grouping, so its expected NetAmount can be computed from
+-- known seed values: GrossAmount = 3.0000 * 15.0000 - 0 = 45.0000,
+-- VatRate (P-2001/Tea) = 0.2300.
+PRINT N'--- 8. NetAmount is present and correct on vw_DailySales --------------';
+
+DECLARE @ExpectedNetAmount DECIMAL(18, 4) = CAST(45.0000 / (1 + 0.2300) AS DECIMAL(18, 4));
+DECLARE @DailyNetAmount DECIMAL(18, 4);
+
+SELECT @DailyNetAmount = [NetAmount]
+FROM   [reporting].[vw_DailySales]
+WHERE  [SalesDate] = '2026-01-05' AND [Region] = N'Malopolskie' AND [CategoryName] = N'Tea';
+
+IF @DailyNetAmount IS NULL
+BEGIN PRINT N'FAIL: vw_DailySales.NetAmount missing for 2026-01-05/Malopolskie/Tea'; SET @Failures += 1; END
+ELSE IF @DailyNetAmount <> @ExpectedNetAmount
+BEGIN
+    PRINT N'FAIL: vw_DailySales.NetAmount = ' + CAST(@DailyNetAmount AS NVARCHAR(20))
+        + N', expected ' + CAST(@ExpectedNetAmount AS NVARCHAR(20));
+    SET @Failures += 1;
+END
+
+-- ---------------------------------------------------------------------------
+PRINT N'--- 9. NetAmount is present and correct on vw_WeeklySales -------------';
+
+DECLARE @WeeklyNetAmount DECIMAL(18, 4);
+
+SELECT @WeeklyNetAmount = [NetAmount]
+FROM   [reporting].[vw_WeeklySales]
+WHERE  [SalesYear] = DATEPART(YEAR, '2026-01-05')
+   AND [SalesWeek] = [dbo].[fn_SalesWeek]('2026-01-05')
+   AND [Region]    = N'Malopolskie';
+
+IF @WeeklyNetAmount IS NULL
+BEGIN PRINT N'FAIL: vw_WeeklySales.NetAmount missing for the 2026-01-05 week/Malopolskie'; SET @Failures += 1; END
+ELSE IF @WeeklyNetAmount <> @ExpectedNetAmount
+BEGIN
+    PRINT N'FAIL: vw_WeeklySales.NetAmount = ' + CAST(@WeeklyNetAmount AS NVARCHAR(20))
+        + N', expected ' + CAST(@ExpectedNetAmount AS NVARCHAR(20));
+    SET @Failures += 1;
+END
+
+-- ---------------------------------------------------------------------------
 PRINT N'======================================================================';
 IF @Failures = 0
     PRINT N'SMOKE TEST PASSED';
