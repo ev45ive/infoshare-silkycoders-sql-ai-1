@@ -189,6 +189,27 @@ _**Agent (copilot/claude-sonnet-5)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` git log --oneline -10`
+
+View recent commit history to identify the commit to revert before
+
+```bash
+git log --oneline -10
+```
+
+**Result:**
+
+```
+f9c6caf (HEAD -> main, origin/main, origin/HEAD) Implement schema change implementation skill and update prerequisite: impact analysis template
+13172d3 Exercise: Clarify ticket DPO-1204: Introduce SnapshotID column to FactSales for load differentiation
+dee1cf9 Net amount - "Naive implement from analysis"
+9d28625 Impact Analysis: DPO-1187 — NetAmount column on sales reporting views
+fd7b9ec Add schema change impact analysis skill and procedure documentation
+2d8160e Use example, explain rules, review/refine -> Save as instructions
+ebdf3e6 prompt/instruction VS SKILL
+3a02888 Auto-load instruction - applyTo: "**/ticket-*.md"
+58a8605 GrillMe/Loop Prompt -> Clarification session — 2026-08-24 meeting note / ticket comment
+15ebacc List questions prompt / vs / interactive Grill-Me Metting prompt + instructions/checklist/template
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-5)**_
@@ -197,6 +218,29 @@ _**Agent (copilot/claude-sonnet-5)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` git show --stat dee1cf9`
+
+Show files changed in the NetAmount commit
+
+```bash
+git show --stat dee1cf9
+```
+
+**Result:**
+
+```
+commit dee1cf99d66ebb07f1fca70c616b0e54216c8397
+Author: Mateusz Kulesza <ev45ive@gmail.com>
+Date:   Mon Aug 24 11:22:50 2026 +0200
+
+    Net amount - "Naive implement from analysis"
+
+ ...2026-08-24_09-14-11Z-implement-functionality.md | 703 +++++++++++++++++++++
+ .specstory/statistics.json                         |   9 +
+ RetailDW/Views/reporting.vw_DailySales.sql         |  12 +-
+ RetailDW/Views/reporting.vw_WeeklySales.sql        |  13 +-
+ tests/smoke-test.sql                               |  42 ++
+ 5 files changed, 775 insertions(+), 4 deletions(-)
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-5)**_
@@ -205,6 +249,20 @@ _**Agent (copilot/claude-sonnet-5)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` git log --oneline dee1cf9..HEAD -- RetailDW/Views/reporting.vw\_DailySales.sq...`
+
+Check if later commits also touched these three files
+
+```bash
+git log --oneline dee1cf9..HEAD -- RetailDW/Views/reporting.vw_DailySales.sql RetailDW/Views/reporting.vw_WeeklySales.sql tests/smoke-test.sql
+```
+
+**Result:**
+
+```
+
+
+Command produced no output
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-5)**_
@@ -217,6 +275,36 @@ _**Agent (copilot/claude-sonnet-5)**_
 <summary>Tool use: **vscode_askQuestions**</summary>
 
 Analyzing your answers...
+
+**Input:**
+
+- questions:
+
+```
+[
+  {
+    "header": "Revert scope",
+    "message": "Revert = restore these 3 files to their state right before commit dee1cf9 (Net amount naive implement): reporting.vw_DailySales.sql, reporting.vw_WeeklySales.sql, tests/smoke-test.sql. No other commits touched these files since.",
+    "options": [
+      {
+        "label": "Edit working tree only, no commit",
+        "recommended": true
+      },
+      {
+        "label": "Also create a git commit for the revert"
+      }
+    ],
+    "question": "Should I just restore the file contents (working tree), or also commit the revert?"
+  }
+]
+```
+
+
+**Result:**
+
+```
+{"answers":{"Revert scope":{"selected":["Edit working tree only, no commit"],"freeText":null,"skipped":false}}}
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-5)**_
@@ -225,6 +313,20 @@ _**Agent (copilot/claude-sonnet-5)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` git checkout 9d28625 -- RetailDW/Views/reporting.vw\_DailySales.sql RetailDW/...`
+
+Restore the three files to their state before the NetAmount commit, in the working tree only
+
+```bash
+git checkout 9d28625 -- RetailDW/Views/reporting.vw_DailySales.sql RetailDW/Views/reporting.vw_WeeklySales.sql tests/smoke-test.sql
+```
+
+**Result:**
+
+```
+
+
+Command produced no output
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-5)**_
@@ -233,4 +335,64 @@ _**Agent (copilot/claude-sonnet-5)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` git status --short`
+
+Confirm which files are now modified in the working tree
+
+```bash
+git status --short
+```
+
+**Result:**
+
+```
+ M .specstory/statistics.json
+M  RetailDW/Views/reporting.vw_DailySales.sql
+M  RetailDW/Views/reporting.vw_WeeklySales.sql
+M  tests/smoke-test.sql
+?? .specstory/history/2026-08-24_09-48-56Z-restore-versions.md
+```
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `reporting.vw_DailySales.sql`
+
+**Input:**
+
+- endLine: `30`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Views\reporting.vw_DailySales.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+-- Daily sales aggregate used by the operational reporting layer.
+-- TODO (DPO-1187): reporting asked for a net amount column.
+CREATE VIEW [reporting].[vw_DailySales]
+AS
+SELECT  f.[SalesDate],
+        st.[Region],
+        p.[CategoryName],
+        SUM(f.[Quantity])       AS [Quantity],
+        SUM(f.[GrossAmount])    AS [GrossAmount],
+        SUM(f.[DiscountAmount]) AS [DiscountAmount],
+        COUNT_BIG(*)            AS [LineCount]
+FROM    [dbo].[FactSales]   AS f
+JOIN    [dbo].[DimProduct]  AS p  ON p.[ProductKey] = f.[ProductKey]
+JOIN    [dbo].[DimStore]    AS st ON st.[StoreKey]  = f.[StoreKey]
+GROUP BY f.[SalesDate], st.[Region], p.[CategoryName];
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Reverted successfully (working tree only, not committed):
+
+- `RetailDW/Views/reporting.vw_DailySales.sql` — `NetAmount` column removed
+- `RetailDW/Views/reporting.vw_WeeklySales.sql` — `NetAmount` column removed
+- `tests/smoke-test.sql` — section 8 (`NetAmount` assertions) removed
+
+These three files now match commit `9d28625` (the state right before `dee1cf9`). Note: `statistics.json` also shows as modified — that's an auto-tracked session log file, unrelated to this revert; let me know if you want it reset too.
