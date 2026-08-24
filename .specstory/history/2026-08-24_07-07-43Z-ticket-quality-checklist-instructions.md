@@ -696,3 +696,413 @@ the column in the view definition — no backfill or history impact.
 _**Agent (copilot/claude-sonnet-5)**_
 
 Added a **Ticket template** section to `.github/instructions/ticket-quality.instructions.md` (markdown skeleton with owner/priority/component/sign-off header, why, description, checkable acceptance criteria, edge cases, rollback), and created a filled example at `exercises/ticket-example-filled.md` based on the real DPO-1187 net-amount request against the actual `reporting.vw_DailySales` schema (`GrossAmount`/`DiscountAmount` columns).
+
+---
+
+_**User (2026-08-24 07:36:57Z)**_
+
+/create-prompt generate ticket claryfing questions for analyst, output as grouped bullet points
+
+---
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read skill `agent-customization`: `prompts.md`
+
+**Input:**
+
+- endLine: `200`
+- filePath: `c:\Users\teamsharq\AppData\Local\Programs\Microsoft VS Code\a5b5009513\resources\app\extensions\copilot\assets\prompts\skills\agent-customization\references\prompts.md`
+- startLine: `1`
+
+**Result:**
+
+````
+# [Prompts (.prompt.md)](https://code.visualstudio.com/docs/copilot/customization/prompt-files)
+
+Reusable task templates triggered on-demand in chat. Single focused task with parameterized inputs.
+
+## Locations
+
+| Path | Scope |
+|------|-------|
+| `.github/prompts/*.prompt.md` | Workspace |
+| `<profile>/prompts/*.prompt.md` | User profile |
+
+## Frontmatter
+
+```yaml
+---
+description: "<recommended>" # Optional, but improves discoverability
+name: "Prompt Name"          # Optional, defaults to filename
+argument-hint: "Task..."     # Optional: hint shown in chat input
+agent: "agent"               # Optional: ask, agent, plan, or custom agent
+model: "GPT-5 (copilot)"     # Optional: selected model, or fallback array
+tools: [search, web]    # Optional: built-in, tool sets, MCP (<server>/*), extension
+---
+```
+
+Model fallback is supported:
+
+```yaml
+model: ['GPT-5 (copilot)', 'Claude Sonnet 4.5 (copilot)']
+```
+
+## Template
+
+```markdown
+---
+description: "Generate test cases for selected code"
+agent: "agent"
+---
+Generate comprehensive test cases for the provided code:
+- Include edge cases and error scenarios
+- Follow existing test patterns in the codebase
+- Use descriptive test names
+```
+
+**Context references**: Use Markdown links for files (`[config](./config.json)`) and `#tool:<name>` for tools.
+
+## Invocation
+
+- **Chat**: Type `/` → select from prompts and skills
+- **Command**: `Chat: Run Prompt...`
+- **Editor**: Open prompt file → play button
+
+> Both prompts and skills appear as slash commands in chat. Skills provide multi-step workflows with bundled assets; prompts are single focused tasks.
+
+**Tip**: Use `chat.promptFilesRecommendations` to show prompts as actions when starting a new chat.
+
+## Tool Priority
+
+When both prompt and custom agent define tools:
+1. Tools from prompt file
+2. Tools from referenced custom agent
+3. Default tools for selected agent
+
+## When to Use
+
+- Generate test cases for specific code
+- Create READMEs from specs
+- Summarize metrics with custom para
+… (output truncated)
+````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `analyze-data-model.prompt.md`, lines 1 to 60
+
+**Input:**
+
+- endLine: `60`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\prompts\analyze-data-model.prompt.md`
+- startLine: `1`
+
+**Result:**
+
+```
+---
+description: "Analyze data warehouse schema as an experienced DW engineer. Reviews structure, data flows, views, and design patterns with tables."
+name: "Analyze Data Model"
+argument-hint: "Provide SQL table/view definitions; optionally add '[DETAILED]' for deep analysis"
+agent: "agent"
+---
+
+# Data Model Analysis
+
+You are an experienced Data Warehouse Engineer analyzing a relational data schema.
+
+Review the provided SQL definitions (tables, views, procedures, functions) and produce a structured analysis with the following sections:
+
+# Clarification
+- If the provided SQL definitions are incomplete or ambiguous, ask for clarification before proceeding. 
+- Use tool:#askQuestions to request additional information.
+- Ask which flow user wants to analyze (e.g., ETL, reporting, or both) if not specified.
+
+
+## **Overview**
+- Purpose and domain (what business problem this solves)
+- Architecture pattern (star schema, 3NF, hybrid, etc.)
+- Scope (number of fact/dimension tables, key entities)
+- Technology stack (SQL Server version, temporal tables, etc.)
+
+## **Data Flows**
+- Identify all data movement paths (source → staging → facts/dimensions)
+- Document ETL/ELT procedures and their sequence
+- Show transformations and business logic
+- Note audit/logging mechanisms
+
+**Format**: Use a mermaid flowchart or sequence diagram.
+
+## **Views**
+- List reporting/analytics views
+- Explain their purpose and dependencies
+- Note materialization or performance considerations
+- Identify if serving real-time, summarized, or historical use cases
+
+**Format**: Table with columns: View Name | Purpose | Dependencies | Refresh Logic
+
+## **Key Decisions & Patterns**
+- Design choices (why this schema pattern?)
+- Performance optimizations (indexing, partitioning, compression)
+- Audit/versioning approach (if temporal tables, CDC, or logs used)
+- Security model (schema-based roles, row-level security)
+- Data quality measures (constraints, validation proced
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `ticket-clarifying-questions.prompt.md`
+
+**Input:**
+
+- content:
+
+```
+---
+description: "Generate clarifying questions for an analyst/requester based on a raw or incomplete ticket, grouped by category. Use when a ticket is missing details needed before implementation can start."
+name: "Ticket Clarifying Questions"
+argument-hint: "Paste the raw ticket/request, or reference a ticket-*.md file"
+agent: "agent"
+---
+
+# Ticket Clarifying Questions
+
+Given a raw or incomplete ticket/request, generate the clarifying questions an analyst/requester needs to answer before implementation can start. Only ask — do not answer the questions yourself, and do not guess at missing details.
+
+Check the ticket against [ticket-quality.instructions.md](../instructions/ticket-quality.instructions.md) and generate one question per genuinely missing or ambiguous item. Skip a category entirely if it's already fully specified in the ticket.
+
+## Output format
+
+Group questions under these headers as bullet points, omitting any header with no questions:
+
+- **Ownership & sign-off** — who owns/requested it, who signs off that it's done
+- **Why** — business justification, what happens if this isn't built
+- **Priority** — urgency/deadline
+- **Acceptance criteria** — testable pass/fail conditions; exact object names for "same as X" references; missing type/nullability/formula for requested fields
+- **Edge cases** — null/blank/zero-row behavior, boundary conditions, duplicate keys, negative values
+- **Scope** — exact tables/views/procedures affected
+- **Data safety** — rollback/reversibility if stored or historical data is touched
+
+Each bullet must be a direct, specific question addressed to the requester — not a restatement of the checklist item it comes from.
+
+```
+
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\prompts\ticket-clarifying-questions.prompt.md`
+
+**Result:**
+
+```
+The following files were successfully edited:
+c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\prompts\ticket-clarifying-questions.prompt.md
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **ticket-clarifying-questions.prompt.md**</summary>
+
+@@ lines 1-1 @@
+
+```
+---
+description: "Generate clarifying questions for an analyst/requester based on a raw or incomplete ticket, grouped by category. Use when a ticket is missing details needed before implementation can start."
+name: "Ticket Clarifying Questions"
+argument-hint: "Paste the raw ticket/request, or reference a ticket-*.md file"
+agent: "agent"
+---
+
+# Ticket Clarifying Questions
+
+Given a raw or incomplete ticket/request, generate the clarifying questions an analyst/requester needs to answer before implementation can start. Only ask — do not answer the questions yourself, and do not guess at missing details.
+
+Check the ticket against [ticket-quality.instructions.md](../instructions/ticket-quality.instructions.md) and generate one question per genuinely missing or ambiguous item. Skip a category entirely if it's already fully specified in the ticket.
+
+## Output format
+
+Group questions under these headers as bullet points, omitting any header with no questions:
+
+- **Ownership & sign-off** — who owns/requested it, who signs off that it's done
+- **Why** — business justification, what happens if this isn't built
+- **Priority** — urgency/deadline
+- **Acceptance criteria** — testable pass/fail conditions; exact object names for "same as X" references; missing type/nullability/formula for requested fields
+- **Edge cases** — null/blank/zero-row behavior, boundary conditions, duplicate keys, negative values
+- **Scope** — exact tables/views/procedures affected
+- **Data safety** — rollback/reversibility if stored or historical data is touched
+
+Each bullet must be a direct, specific question addressed to the requester — not a restatement of the checklist item it comes from.
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Created `.github/prompts/ticket-clarifying-questions.prompt.md`, workspace-scoped to match your existing prompt.
+
+**What it does:** takes a raw/incomplete ticket (pasted or referenced), checks it against `.github/instructions/ticket-quality.instructions.md`, and outputs only the genuinely missing/ambiguous items as direct questions to the requester — grouped under: Ownership & sign-off, Why, Priority, Acceptance criteria, Edge cases, Scope, Data safety. It's explicitly told not to guess or answer for the analyst.
+
+**Try it:** `/ticket-clarifying-questions` with `exercises/ticket-DPO-1187-netamount.md` attached — should surface most categories since that ticket is missing almost everything except component/priority.
+
+Assumption I made without asking: workspace scope (`prompts`), matching the instruction file and your existing `analyze-data-model.prompt.md`. Let me know if you wanted this as a personal/user-profile prompt instead.
+
+Related customization worth considering: a companion prompt that takes the *answers* to these questions and drafts the filled-in ticket using the template from `.github/instructions/ticket-quality.instructions.md`.
+
+---
+
+_**User (2026-08-24 07:40:43Z)**_
+
+/create-prompt ticket claryfing meeting session - guide user through claryfing questions until user wants to stop. summarize:
+- answers, 
+- decisions 
+- open questions
+- out-of-scope 
+
+ask user if they want to save to new file, or update existing ticket or add comments to ticket
+
+---
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `ticket-clarifying-meeting.prompt.md`
+
+**Input:**
+
+- content:
+
+```
+---
+description: "Run an interactive ticket-grooming session: ask clarifying questions one at a time until the user stops, then summarize answers/decisions/open questions/out-of-scope and offer to save. Use when live-grooming an incomplete ticket with the requester."
+name: "Ticket Clarifying Meeting"
+argument-hint: "Reference a ticket-*.md file or paste the raw ticket"
+agent: "agent"
+---
+
+# Ticket Clarifying Meeting
+
+Run this as a live grooming session with the user acting as the analyst/requester. Do not batch-dump the whole checklist — this is a conversation, not a form.
+
+## Setup
+
+- Load the ticket from the reference or pasted text provided.
+- Check it against [ticket-quality.instructions.md](../instructions/ticket-quality.instructions.md) to find what's missing or ambiguous.
+
+## Session loop
+
+- Ask 1–3 closely related questions per turn (e.g. all edge-case questions together), not the entire checklist at once.
+- Wait for the user's answer before asking the next batch.
+- If an answer is still vague, ask exactly one follow-up to pin it down — don't loop indefinitely on the same point.
+- If the user doesn't know an answer, record it as still open and move on; never invent an answer on their behalf.
+- Keep going until the user signals they want to stop (e.g. "stop", "that's enough", "done", "let's wrap up").
+
+## Ending: summary
+
+When the session ends, produce a summary with exactly these four sections, in this order:
+
+- **Answers** — each question asked and the answer given
+- **Decisions** — the concrete, checkable outcome derived from each answer (e.g. "NetAmount = GrossAmount − DiscountAmount; null DiscountAmount treated as 0")
+- **Open questions** — anything raised but left unresolved
+- **Out of scope** — anything the user explicitly excluded during the conversation
+
+## After the summary
+
+Ask the user exactly one question: should this be saved as a **new file**, used to **update the existing ticket** in place, or added as a **comment/appendix** to the existing ticket without altering the original content?
+
+Then perform only the chosen action:
+- **New file**: create it using the ticket template in [ticket-quality.instructions.md](../instructions/ticket-quality.instructions.md).
+- **Update existing**: revise the ticket's fields/criteria directly based on the decisions.
+- **Append as comment**: add a dated "Clarification session" section to the end of the existing ticket with the four summary sections, leaving the original ticket text untouched.
+
+```
+
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\prompts\ticket-clarifying-meeting.prompt.md`
+
+**Result:**
+
+```
+The following files were successfully edited:
+c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\prompts\ticket-clarifying-meeting.prompt.md
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **ticket-clarifying-meeting.prompt.md**</summary>
+
+@@ lines 1-1 @@
+
+```
+---
+description: "Run an interactive ticket-grooming session: ask clarifying questions one at a time until the user stops, then summarize answers/decisions/open questions/out-of-scope and offer to save. Use when live-grooming an incomplete ticket with the requester."
+name: "Ticket Clarifying Meeting"
+argument-hint: "Reference a ticket-*.md file or paste the raw ticket"
+agent: "agent"
+---
+
+# Ticket Clarifying Meeting
+
+Run this as a live grooming session with the user acting as the analyst/requester. Do not batch-dump the whole checklist — this is a conversation, not a form.
+
+## Setup
+
+- Load the ticket from the reference or pasted text provided.
+- Check it against [ticket-quality.instructions.md](../instructions/ticket-quality.instructions.md) to find what's missing or ambiguous.
+
+## Session loop
+
+- Ask 1–3 closely related questions per turn (e.g. all edge-case questions together), not the entire checklist at once.
+- Wait for the user's answer before asking the next batch.
+- If an answer is still vague, ask exactly one follow-up to pin it down — don't loop indefinitely on the same point.
+- If the user doesn't know an answer, record it as still open and move on; never invent an answer on their behalf.
+- Keep going until the user signals they want to stop (e.g. "stop", "that's enough", "done", "let's wrap up").
+
+## Ending: summary
+
+When the session ends, produce a summary with exactly these four sections, in this order:
+
+- **Answers** — each question asked and the answer given
+- **Decisions** — the concrete, checkable outcome derived from each answer (e.g. "NetAmount = GrossAmount − DiscountAmount; null DiscountAmount treated as 0")
+- **Open questions** — anything raised but left unresolved
+- **Out of scope** — anything the user explicitly excluded during the conversation
+
+## After the summary
+
+Ask the user exactly one question: should this be saved as a **new file**, used to **update the existing ticket** in place, or added as a **comment/appendix** to the existing ticket without altering the original content?
+
+Then perform only the chosen action:
+- **New file**: create it using the ticket template in [ticket-quality.instructions.md](../instructions/ticket-quality.instructions.md).
+- **Update existing**: revise the ticket's fields/criteria directly based on the decisions.
+- **Append as comment**: add a dated "Clarification session" section to the end of the existing ticket with the four summary sections, leaving the original ticket text untouched.
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Created `.github/prompts/ticket-clarifying-meeting.prompt.md`.
+
+**What it does:**
+- Loads a ticket, checks it against `.github/instructions/ticket-quality.instructions.md`.
+- Runs an interactive loop — 1-3 related questions per turn, one follow-up max if an answer's still vague, keeps going until you say stop.
+- Ends with a fixed 4-part summary: **Answers / Decisions / Open questions / Out of scope**.
+- Then asks exactly one question — save as new file, update the existing ticket, or append as a comment section — and performs only that action.
+
+**Try it:** `/ticket-clarifying-meeting` with `exercises/ticket-DPO-1187-netamount.md` attached.
+
+Note: this reuses the checklist from `ticket-quality.instructions.md` rather than duplicating it — if you tweak the checklist later, this prompt picks it up automatically. Didn't touch the earlier `/ticket-clarifying-questions` prompt (one-shot batch of questions) since it serves a different mode than this live session.
