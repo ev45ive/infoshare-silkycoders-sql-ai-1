@@ -252,6 +252,15 @@
       "provider": "claude-code",
       "last_updated": "2026-08-24T12:35:08Z"
     },
+    "a80eb70b-5eed-40e9-8765-9f5e0f0da2d8": {
+      "user_message_count": 1,
+      "agent_message_count": 24,
+      "start_timestamp": "2026-08-24T15:42:38+02:00",
+      "end_timestamp": "2026-08-24T15:49:57+02:00",
+      "markdown_size_bytes": 45383,
+      "provider": "copilotide",
+      "last_updated": "2026-08-24T13:49:57Z"
+    },
     "a9617558-0739-401f-a526-85fbc597e912": {
       "user_message_count": 1,
       "agent_message_count": 1,
