@@ -16,4 +16,325 @@ _**Agent (copilot/claude-sonnet-5)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running `./scripts/dw.sh baseline`
+
+Start the SQL Server container, build the dacpac, publish, seed staging, run ETL, and run the smoke test.
+
+```bash
+./scripts/dw.sh baseline
+```
+
+**Result:**
+
+```
+SQL Server is ready on 127.0.0.1,14330
+Restore complete (0.4s)
+  RetailDW netstandard2.1 succeeded (3.3s) → RetailDW\bin\Debug\RetailDW.dacpac
+
+Build succeeded in 4.3s
+Publishing to database 'RetailDW' on server '127.0.0.1,14330'.
+Initializing deployment (Start)
+*** The column [dbo].[FactSales].[SnapshotID] is being dropped, data loss could occur.
+*** The column [dbo].[FactSalesHistory].[SnapshotID] is being dropped, data loss could occur.
+*** The column [stg].[Sales].[SnapshotID] is being dropped, data loss could occur.
+Initializing deployment (Complete)
+Analyzing deployment plan (Start)
+Analyzing deployment plan (Complete)
+Updating database (Start)
+[PreDeployment] start
+[PreDeployment] nothing to do
+[PreDeployment] end
+An error occurred while the batch was being executed.
+Updating database (Failed)
+*** Could not deploy package.
+Warning SQL72015: The column [dbo].[FactSales].[SnapshotID] is being dropped, data loss could occur.
+Warning SQL72015: The column [dbo].[FactSalesHistory].[SnapshotID] is being dropped, data loss could occur.
+Warning SQL72015: The column [stg].[Sales].[SnapshotID] is being dropped, data loss could occur.
+Error SQL72014: Core Microsoft SqlClient Data Provider: Msg 50000, Level 16, State 127, Line 6 Rows were detected. The schema update is terminating because data loss might occur.
+Error SQL72045: Script execution error.  The executed script:
+IF EXISTS (SELECT TOP 1 1
+           FROM   [dbo].[FactSales])
+    RAISERROR (N'Rows were detected. The schema update is terminating because data loss might occur.', 16, 127)
+        WITH NOWAIT;
+
+
+
+Time elapsed 0:00:22.34
+
+Command exited with code 1
+```
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+
+**Input:**
+
+- isRegexp: `false`
+- query: `SnapshotID`
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `PreDeployment.sql`
+
+**Input:**
+
+- endLine: `200`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Scripts\PreDeployment.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+/*
+Pre-deployment script
+---------------------
+Runs BEFORE the schema diff is applied.
+
+Use it only for operations that must happen before SQLPackage touches the
+schema, e.g. disabling SYSTEM_VERSIONING on temporal tables so that columns
+can be added to both the current and the history table.
+
+Keep every statement idempotent - this script runs on every publish.
+*/
+PRINT N'[PreDeployment] start';
+
+PRINT N'[PreDeployment] nothing to do';
+
+PRINT N'[PreDeployment] end';
+GO
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git log --oneline -- RetailDW/Tables/dbo.FactSales.sql | head -20`
+
+Check history of FactSales table definition for the SnapshotID column removal.
+
+```bash
+git log --oneline -- RetailDW/Tables/dbo.FactSales.sql | head -20
+```
+
+**Result:**
+
+```
+The user cancelled the tool call.
+```
+</details></tool-use>
+
+---
+
+_**User (2026-08-24 06:39:39Z)**_
+
+rebuild before baseline
+
+---
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<think><details><summary>Thought Process</summary>
+The publish failure is because the deployed DB still has data in `dbo.FactSales`/`FactSalesHistory`/`stg.Sales` with a `SnapshotID` column that's no longer in the project's table definitions — SqlPackage blocks the drop to avoid data loss.
+
+"Rebuild before baseline" would map to `./scripts/dw.sh reset`, which **drops the `RetailDW` database** (all current data) and rebuilds/publishes from scratch, then baseline would re-seed/re-run ETL/smoke on top of that.
+
+Since this is destructive (drops existing data), please confirm before I run it:
+</details></think>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `dw.sh`
+
+**Input:**
+
+- endLine: `400`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\scripts\dw.sh`
+- startLine: `1`
+
+**Result:**
+
+```
+#!/usr/bin/env bash
+#
+# RetailDW workshop helper.
+#
+#   ./scripts/dw.sh up        start the SQL Server container
+#   ./scripts/dw.sh build     build the database project (produces the dacpac)
+#   ./scripts/dw.sh publish   publish the dacpac to the local container
+#   ./scripts/dw.sh seed      truncate + load staging batch 1
+#   ./scripts/dw.sh etl       run etl.LoadFactSales for the POS source system
+#   ./scripts/dw.sh smoke     run the smoke test
+#   ./scripts/dw.sh reset     drop and rebuild the database from scratch
+#   ./scripts/dw.sh diff      generate a deploy diff script from the dacpac vs the target database
+#   ./scripts/dw.sh sql "..." run an ad-hoc query
+#   ./scripts/dw.sh baseline  up + build + publish + seed + etl + smoke
+#   ./scripts/dw.sh wsl-memory [GB]  ensure WSL2 has enough memory for SQL Server (default 3GB)
+#
+set -euo pipefail
+set +H 2>/dev/null || true
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SERVER="127.0.0.1,14330"
+DB="RetailDW"
+WSL_MIN_MEMORY_GB=3
+SA_USER="sa"
+SA_PASS="${MSSQL_SA_PASSWORD:-Workshop_Dev2026#}"
+
+export PATH="$PATH:$HOME/.dotnet/tools"
+
+winpath() { # winpath <path> - sqlcmd/sqlpackage are Windows binaries
+  if command -v cygpath >/dev/null 2>&1; then cygpath -w "$1"; else printf '%s' "$1"; fi
+}
+
+q() { # q <database> <query>
+  sqlcmd -S "$SERVER" -U "$SA_USER" -P "$SA_PASS" -C -b -d "$1" -Q "$2"
+}
+
+f() { # f <database> <file>
+  sqlcmd -S "$SERVER" -U "$SA_USER" -P "$SA_PASS" -C -b -d "$1" -i "$(winpath "$2")"
+}
+
+cmd_wsl_memory() { # cmd_wsl_memory [GB] - ensure .wslconfig grants WSL2 enough RAM for sqlservr (>=2000MB required)
+  local target_gb="${1:-$WSL_MIN_MEMORY_GB}"
+  local target="${target_gb}GB"
+  local winhome="${USERPROFILE:-}"
+  if [ -z "$winhome" ]; then
+    echo "USERPROFILE is not set - cannot locate .wslconfig" >&2
+    return 1
+  fi
+
+  local cfg
+  if command -v cygpath >/dev/null 2>&1; then
+    cfg="$(cygpath -u "$winhome")/.wslconfig"
+  else
+ 
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+The publish failure is because the deployed DB still has data in `dbo.FactSales`/`FactSalesHistory`/`stg.Sales` with a `SnapshotID` column that's no longer in the project's table definitions — SqlPackage blocks the drop to avoid data loss.
+
+"Rebuild before baseline" would map to `.`dw.sh` reset`, which **drops the `RetailDW` database** (all current data) and rebuilds/publishes from scratch, then baseline would re-seed/re-run ETL/smoke on top of that.
+
+Since this is destructive (drops existing data), please confirm before I run it: 
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="vscode_askQuestions"><details>
+<summary>Tool use: **vscode_askQuestions**</summary>
+
+Analyzing your answers...
+
+**Input:**
+
+- questions:
+
+```
+[
+  {
+    "header": "Confirm DB reset",
+    "options": [
+      {
+        "label": "Yes, reset then baseline",
+        "recommended": true
+      },
+      {
+        "label": "No, do something else"
+      }
+    ],
+    "question": "Run `./scripts/dw.sh reset` (drops the RetailDW database, losing current data) then `./scripts/dw.sh baseline`?"
+  }
+]
+```
+
+
+**Result:**
+
+```
+{"answers":{"Confirm DB reset":{"selected":["Yes, reset then baseline"],"freeText":null,"skipped":false}}}
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` ./scripts/dw.sh reset && ./scripts/dw.sh baseline`
+
+Drop and rebuild the RetailDW database from scratch, then run the full baseline (up + build + publish + seed + etl + smoke).
+
+```bash
+./scripts/dw.sh reset && ./scripts/dw.sh baseline
+```
+
+**Result:**
+
+```
+Nonqualified transactions are being rolled back. Estimated rollback completion: 0%.
+Nonqualified transactions are being rolled back. Estimated rollback completion: 100%.
+Restore complete (0.4s)
+  RetailDW netstandard2.1 succeeded (0.7s) → RetailDW\bin\Debug\RetailDW.dacpac
+
+Build succeeded in 1.7s
+Publishing to database 'RetailDW' on server '127.0.0.1,14330'.
+Initializing deployment (Start)
+Initializing deployment (Complete)
+Analyzing deployment plan (Start)
+Analyzing deployment plan (Complete)
+Updating database (Start)
+Creating database RetailDW...
+[PreDeployment] start
+[PreDeployment] nothing to do
+[PreDeployment] end
+Creating Schema [etl]...
+Creating Schema [reporting]...
+Creating Schema [stg]...
+Creating Table [stg].[Sales]...
+Creating Table [dbo].[DeploymentHistory]...
+Creating Table [dbo].[DimProduct]...
+Creating Index [dbo].[DimProduct].[UX_DimProduct_ProductCode]...
+Creating Table [dbo].[DimStore]...
+Creating Index [dbo].[DimStore].[UX_DimStore_StoreCode]...
+Creating Table [dbo].[FactSalesHistory]...
+Creating Index [dbo].[FactSalesHistory].[IX_FactSalesHistory_Period]...
+Creating Table [dbo].[LoadLog]...
+Creating Index [dbo].[LoadLog].[IX_LoadLog_StartedAt]...
+Creating Table [dbo].[FactSales]...
+Creating Index [dbo].[FactSales].[IX_FactSales_SalesDate]...
+Creating Default Constraint [stg].[DF_stg_Sales_LoadedAt]...
+Creating Default Constraint [dbo].[DF_DeploymentHistory_AppliedAt]...
+Creating Default Constraint [dbo].[DF_DeploymentHistory_AppliedBy]...
+Creating Default Constraint [dbo].[DF_DimProduct_VatRate]...
+Creating Default Constraint [dbo].[DF_DimProduct_IsActive]...
+Creating Default Constraint [dbo].[DF_FactSales_DiscountAmount]...
+Creating Default Constraint [dbo].[DF_LoadLog_Status]...
+Creating Default Constraint [dbo].[DF_LoadLog_StartedAt]...
+Creating Sequence [dbo].[SalesKeySequence]...
+Creating Foreign Key [dbo].[FK_FactSales_LoadLog]...
+Creating Foreign Key [dbo].[FK_FactSales_DimProduct]...
+Creating Foreign Key [dbo].[FK_FactSales_DimStore]...
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Reset and rebaseline succeeded — SMOKE TEST PASSED. Database recreated from scratch, published clean (no more `SnapshotID` data-loss conflict), seeded, ETL loaded 8/13 rows (3 rejected as expected), and all smoke checks passed.
