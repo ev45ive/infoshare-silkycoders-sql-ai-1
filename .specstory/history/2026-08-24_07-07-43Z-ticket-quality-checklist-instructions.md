@@ -431,3 +431,268 @@ Try it with: *"Check ticket-DPO-1187-netamount.md against our ticket quality che
 Related customizations worth adding next:
 - A **prompt** (`/groom-ticket`) that takes a raw ticket and outputs a filled-in acceptance-criteria draft plus open questions in one shot.
 - A companion instruction for **writing** tickets (producer-side) vs. this one which is more review-side.
+
+---
+
+_**User (2026-08-24 07:30:17Z)**_
+
+add  ticket template with section to instruction
+
+add example filled ticket
+
+---
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `ticket-quality.instructions.md`, lines 1 to 40
+
+**Input:**
+
+- endLine: `40`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\.github\instructions\ticket-quality.instructions.md`
+- startLine: `1`
+
+**Result:**
+
+```
+---
+description: "Use when writing, grooming, or reviewing a ticket/requirement, or turning a raw request (Slack message, email) into acceptance criteria. Covers ownership, business justification, testable criteria, edge cases, scope, and rollback."
+applyTo: "**/ticket-*.md"
+---
+
+# Ticket Quality Checklist
+
+Use this to judge whether a ticket is ready for implementation, and to note what's missing. Checkability is the bar, not length — a short ticket can still be complete.
+
+## Required fields
+
+- **Owner/requester**: who to ping when something is ambiguous.
+- **Why**: the business reason, not just what to build. Without it, every ambiguous case gets guessed at instead of decided.
+- **Priority**: stated explicitly. A missing priority is a gap to flag, not an implicit "urgent".
+- **Sign-off**: who verifies the acceptance criteria before the ticket is closed.
+
+## Acceptance criteria
+
+- Each criterion must be testable/checkable — "make it work correctly" is not one.
+- A verbatim pasted request is raw input, not a spec. It must be turned into explicit criteria before work starts.
+- "Same as X" references (e.g. "same view they already use") must name the exact object. An unnamed reference is not verifiable.
+- Vague asks like "add a column for it" need: data type, nullability, and whether it's computed or stored (with the formula/source if computed).
+
+## Edge cases
+
+- What happens on null/blank/missing source data, or zero rows returned?
+- Other edge cases relevant to the ticket: period boundaries (first/last day), duplicate keys, negative amounts, etc.
+
+## Scope
+
+- Which tables/views/procedures are affected? Name them if the requester already knows — "somewhere in reporting" isn't enough in that case.
+
+## Data safety
+
+- If the change touches stored or historical data, is it reversible? Note the rollback or backfill approach.
+
+## When something is missing
+
+- Don't fill the gap silently or assume "no change needed" — list it as an open qu
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `reporting.vw_DailySales.sql`
+
+**Input:**
+
+- endLine: `80`
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\RetailDW\Views\reporting.vw_DailySales.sql`
+- startLine: `1`
+
+**Result:**
+
+```
+-- Daily sales aggregate used by the operational reporting layer.
+-- TODO (DPO-1187): reporting asked for a net amount column.
+CREATE VIEW [reporting].[vw_DailySales]
+AS
+SELECT  f.[SalesDate],
+        st.[Region],
+        p.[CategoryName],
+        SUM(f.[Quantity])       AS [Quantity],
+        SUM(f.[GrossAmount])    AS [GrossAmount],
+        SUM(f.[DiscountAmount]) AS [DiscountAmount],
+        COUNT_BIG(*)            AS [LineCount]
+FROM    [dbo].[FactSales]   AS f
+JOIN    [dbo].[DimProduct]  AS p  ON p.[ProductKey] = f.[ProductKey]
+JOIN    [dbo].[DimStore]    AS st ON st.[StoreKey]  = f.[StoreKey]
+GROUP BY f.[SalesDate], st.[Region], p.[CategoryName];
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **ticket-quality.instructions.md**</summary>
+
+@@ lines 40-40 @@
+
+````
+
+
+## Ticket template
+
+Use this shape when writing a new ticket or reformatting a raw request into one:
+
+```markdown
+# Ticket <ID>
+
+**Reported by:** <owner/requester>
+**Priority:** <Low | Medium | High | Urgent>
+**Component:** <affected table/view/procedure, exact name(s)>
+**Sign-off by:** <who verifies acceptance criteria before closing>
+
+## Why
+
+<business reason this is needed>
+
+## Description
+
+<what to build, in your own words — not a pasted quote>
+
+## Acceptance criteria
+
+- [ ] <testable criterion>
+- [ ] <testable criterion>
+
+## Edge cases
+
+- Null/blank/zero-row source data: <expected behavior>
+- <other relevant edge case>: <expected behavior>
+
+## Rollback / reversibility
+
+<how to undo this if it touches stored or historical data, or "N/A" if it doesn't>
+```
+
+See `exercises/ticket-example-filled.md` for a filled-in example.
+````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `ticket-example-filled.md`
+
+**Input:**
+
+- content:
+
+```
+# Ticket DPO-1187
+
+**Reported by:** Jane Kowalski (Finance / Reporting team)
+**Priority:** Medium
+**Component:** `reporting.vw_DailySales`
+**Sign-off by:** Jane Kowalski
+
+## Why
+
+Finance runs a monthly VAT reconciliation and needs a net-of-discount amount
+per day/region/category so they stop recomputing it manually in Excel from
+`GrossAmount` and `DiscountAmount`.
+
+## Description
+
+Add a computed `NetAmount` column to `reporting.vw_DailySales`, equal to
+`GrossAmount - DiscountAmount`, aggregated at the same grain as the existing
+columns (`SalesDate`, `Region`, `CategoryName`).
+
+## Acceptance criteria
+
+- [ ] `reporting.vw_DailySales` returns a new column `NetAmount` of type `DECIMAL(18,2)`.
+- [ ] `NetAmount = SUM(GrossAmount) - SUM(DiscountAmount)` for each existing group (`SalesDate`, `Region`, `CategoryName`).
+- [ ] No existing column is renamed, removed, or reordered.
+- [ ] `reporting.vw_WeeklySales` is unaffected (out of scope for this ticket).
+
+## Edge cases
+
+- Rows where `DiscountAmount` is `NULL`: treated as `0` (no discount), not excluded from the aggregate.
+- A day/region/category with zero matching sales rows: no row is produced, same as today — `NetAmount` is never a row of zeros.
+- `DiscountAmount` greater than `GrossAmount` (over-discounted line): `NetAmount` is allowed to be negative; not clamped to zero.
+
+## Rollback / reversibility
+
+View-only change, no stored data is modified. Rollback is dropping/reverting
+the column in the view definition — no backfill or history impact.
+
+```
+
+- filePath: `c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\exercises\ticket-example-filled.md`
+
+**Result:**
+
+```
+The following files were successfully edited:
+c:\Users\teamsharq\Desktop\infoshare-silkycoders-sql-ai-1\exercises\ticket-example-filled.md
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **ticket-example-filled.md**</summary>
+
+@@ lines 1-1 @@
+
+```
+# Ticket DPO-1187
+
+**Reported by:** Jane Kowalski (Finance / Reporting team)
+**Priority:** Medium
+**Component:** `reporting.vw_DailySales`
+**Sign-off by:** Jane Kowalski
+
+## Why
+
+Finance runs a monthly VAT reconciliation and needs a net-of-discount amount
+per day/region/category so they stop recomputing it manually in Excel from
+`GrossAmount` and `DiscountAmount`.
+
+## Description
+
+Add a computed `NetAmount` column to `reporting.vw_DailySales`, equal to
+`GrossAmount - DiscountAmount`, aggregated at the same grain as the existing
+columns (`SalesDate`, `Region`, `CategoryName`).
+
+## Acceptance criteria
+
+- [ ] `reporting.vw_DailySales` returns a new column `NetAmount` of type `DECIMAL(18,2)`.
+- [ ] `NetAmount = SUM(GrossAmount) - SUM(DiscountAmount)` for each existing group (`SalesDate`, `Region`, `CategoryName`).
+- [ ] No existing column is renamed, removed, or reordered.
+- [ ] `reporting.vw_WeeklySales` is unaffected (out of scope for this ticket).
+
+## Edge cases
+
+- Rows where `DiscountAmount` is `NULL`: treated as `0` (no discount), not excluded from the aggregate.
+- A day/region/category with zero matching sales rows: no row is produced, same as today — `NetAmount` is never a row of zeros.
+- `DiscountAmount` greater than `GrossAmount` (over-discounted line): `NetAmount` is allowed to be negative; not clamped to zero.
+
+## Rollback / reversibility
+
+View-only change, no stored data is modified. Rollback is dropping/reverting
+the column in the view definition — no backfill or history impact.
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Added a **Ticket template** section to `.github/instructions/ticket-quality.instructions.md` (markdown skeleton with owner/priority/component/sign-off header, why, description, checkable acceptance criteria, edge cases, rollback), and created a filled example at `exercises/ticket-example-filled.md` based on the real DPO-1187 net-amount request against the actual `reporting.vw_DailySales` schema (`GrossAmount`/`DiscountAmount` columns).

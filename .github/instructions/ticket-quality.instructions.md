@@ -38,3 +38,40 @@ Use this to judge whether a ticket is ready for implementation, and to note what
 
 - Don't fill the gap silently or assume "no change needed" — list it as an open question for the requester.
 - Surface open questions before any acceptance-criteria draft or implementation plan.
+
+## Ticket template
+
+Use this shape when writing a new ticket or reformatting a raw request into one:
+
+```markdown
+# Ticket <ID>
+
+**Reported by:** <owner/requester>
+**Priority:** <Low | Medium | High | Urgent>
+**Component:** <affected table/view/procedure, exact name(s)>
+**Sign-off by:** <who verifies acceptance criteria before closing>
+
+## Why
+
+<business reason this is needed>
+
+## Description
+
+<what to build, in your own words — not a pasted quote>
+
+## Acceptance criteria
+
+- [ ] <testable criterion>
+- [ ] <testable criterion>
+
+## Edge cases
+
+- Null/blank/zero-row source data: <expected behavior>
+- <other relevant edge case>: <expected behavior>
+
+## Rollback / reversibility
+
+<how to undo this if it touches stored or historical data, or "N/A" if it doesn't>
+```
+
+See `exercises/ticket-example-filled.md` for a filled-in example.
