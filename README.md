@@ -37,3 +37,9 @@ Local SQL Server container (see `scripts/dw.sh`), default credentials can be ove
 ```
 Server=127.0.0.1,14330;Database=RetailDW;User Id=sa;Password=Workshop_Dev2026#;TrustServerCertificate=True;
 ```
+
+
+# Po urlopie
+```
+run sql server, build, run baseline
+```
