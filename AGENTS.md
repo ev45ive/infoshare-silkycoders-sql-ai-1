@@ -78,8 +78,10 @@ For Project lifecycle use existing scripts in `scripts/` directory
   ./scripts/dw.sh etl       run etl.LoadFactSales for the POS source system
   ./scripts/dw.sh smoke     run the smoke test
   ./scripts/dw.sh reset     drop and rebuild the database from scratch [DANGER -  Needs confirmation]
+  ./scripts/dw.sh diff      generate a deploy diff script from the dacpac vs the target database
   ./scripts/dw.sh sql "..." run an ad-hoc query
   ./scripts/dw.sh baseline  up + build + publish + seed + etl + smoke
+  ./scripts/dw.sh wsl-memory [GB]  ensure WSL2 has enough memory for SQL Server (default 3GB)
 ```
 
 # Conditionally loaded Instructions 
