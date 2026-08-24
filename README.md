@@ -14,6 +14,10 @@ open window
 Ctrl+Shift+X
 .vscode\extensions.json @recommended
 
+# Powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\..
+
+
 # Docker
 Menu Start -> Docker Desktop
 

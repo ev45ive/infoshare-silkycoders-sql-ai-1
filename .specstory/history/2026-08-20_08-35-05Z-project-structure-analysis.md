@@ -78,7 +78,7 @@ CREATE TABLE [dbo].[FactSales]
     [GrossAmount]    DECIMAL (18, 4) NOT NULL,
     [VatRate]        DECIMAL (5, 4)  NOT NULL,
     [SourceSystem]   NVARCHAR (20)   NOT NULL,
-    [SnapshotID]     INT             NULL,
+
     [LoadId]         INT             NOT NULL,
     [ValidFrom]      DATETIME2 (7)   GENERATED ALWAYS AS ROW START NOT NULL,
     [ValidTo]        DATETIME2 (7)   GENERATED ALWAYS AS ROW END   NOT NULL,

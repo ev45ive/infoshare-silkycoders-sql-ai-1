@@ -46,7 +46,7 @@ CREATE TABLE [stg].[Sales]
     [UnitPrice]      DECIMAL (18, 4) NULL,
     [DiscountAmount] DECIMAL (18, 4) NULL,
     [SourceSystem]   NVARCHAR (20)   NULL,
-    [SnapshotID]     INT             NULL,
+
     [LoadedAt]       DATETIME2 (3)   NOT NULL CONSTRAINT [DF_stg_Sales_LoadedAt] DEFAULT (SYSUTCDATETIME()),
     CONSTRAINT [PK_stg_Sales] PRIMARY KEY CLUSTERED ([StagingRowId] ASC)
 );
@@ -83,7 +83,7 @@ CREATE TABLE [dbo].[FactSales]
     [GrossAmount]    DECIMAL (18, 4) NOT NULL,
     [VatRate]        DECIMAL (5, 4)  NOT NULL,
     [SourceSystem]   NVARCHAR (20)   NOT NULL,
-    [SnapshotID]     INT             NULL,
+
     [LoadId]         INT             NOT NULL,
     [ValidFrom]      DATETIME2 (7)   GENERATED ALWAYS AS ROW START NOT NULL,
     [ValidTo]        DATETIME2 (7)   GENERATED ALWAYS AS ROW END   NOT NULL,
@@ -161,7 +161,7 @@ BEGIN
             [GrossAmount]    DECIMAL (18, 4) NOT NULL,
             [VatRate]        DECIMAL (5, 4)  NOT NULL,
             [SourceSystem]   NVARCHAR (20)   NOT NULL,
-            [SnapshotID]     INT             NULL,
+
             PRIMARY KEY CLUSTERED ([SalesOrderNo], [SalesLineNo])
         );
 
@@ -223,11 +223,11 @@ Read `etl.LoadFactSales.sql`, lines 100 to 188
                           OR tgt.[DiscountAmount] <> src.[DiscountAmount]
                           OR tgt.[GrossAmount]    <> src.[GrossAmount]
                           OR tgt.[VatRate]        <> src.[VatRate]
-                          -- NULL-safe: SnapshotID is nullable, so a plain <> would
+
                           -- silently miss a change from/to NULL (see docs/reference
                           -- for why: SQL comparisons involving NULL are UNKNOWN,
                           -- never TRUE, so `<>` alone can never fire on a NULL side).
-                          OR ISNULL(tgt.[SnapshotID]
+
 … (output truncated)
 ```
 </details></tool-use>
@@ -248,7 +248,7 @@ Dobra wiadomość — **procedure do ładowania danych już istnieje**! Procedur
 2. **Transformacje**
    - Rozwiązuje surogatowe klucze wymiarów (ProductKey, StoreKey)
    - Oblicza GrossAmount: (Quantity × UnitPrice) - DiscountAmount
-   - Obsługuje NULL-safe porównania dla SnapshotID
+
 
 3. **Ładowanie danych (MERGE)**
    - **INSERT**: Nowe rekordy do FactSales

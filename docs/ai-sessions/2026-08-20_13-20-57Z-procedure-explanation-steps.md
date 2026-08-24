@@ -40,7 +40,7 @@ Here's a step-by-step walkthrough of `RetailDW/Procedures/etl.LoadFactSales.sql`
 - **Reuse keys**: for business keys `(SalesOrderNo, SalesLineNo)` that already exist in dbo.FactSales, copies the existing `SalesKey` into `#FtData` so updates don't mint new keys.
 - **Mint new keys**: any `#FtData` row still missing a `SalesKey` (i.e., a genuinely new business key) gets the next value from dbo.SalesKeySequence.
 - **MERGE** `#FtData` into `dbo.FactSales` (`WITH (HOLDLOCK)` to prevent race conditions between concurrent loads):
-  - **WHEN MATCHED** and any tracked column differs (including a NULL-safe comparison on `SnapshotID` via `ISNULL(..., -1)`) → UPDATE the row and stamp `LoadId`.
+
   - **WHEN NOT MATCHED BY TARGET** → INSERT the new row (including the newly minted/reused `SalesKey` and `LoadId`).
   - `OUTPUT $action INTO @MergeActions` captures whether each affected row was an `INSERT` or `UPDATE`.
   - Since dbo.FactSales is system-versioned, historical versions of updated rows are automatically archived to dbo.FactSalesHistory by SQL Server.
